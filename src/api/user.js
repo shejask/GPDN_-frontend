@@ -4,6 +4,7 @@ import userRoute from "../services/endPoints/userEndpoints";
 
 
 
+e
 export const fetchUserById = async () => {
   const userId = localStorage.getItem('userId');
   
@@ -13,8 +14,8 @@ export const fetchUserById = async () => {
 
   try {
     const response = await Api.get(userRoute.userProfile, {
-      _id: userId 
-     });
+     _id: userId 
+    });
 
     if (!response?.data) {
       throw new Error('Invalid response format');
@@ -36,7 +37,6 @@ export const fetchUserById = async () => {
     throw error;
   }
 };
-
 
 
 
