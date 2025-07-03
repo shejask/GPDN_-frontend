@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import bg from "../assets/signin/registrationBg.png";
 import Image from "next/image";
@@ -13,6 +13,17 @@ function Registration() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [registrationData, setRegistrationData] = useState({});
+
+  useEffect(() => {
+    // Check if running in browser environment
+    if (typeof window !== 'undefined') {
+      const userId = localStorage.getItem('userId');
+      if (userId) {
+        // If userId exists in localStorage, navigate to forum page
+        router.push('/forum');
+      }
+    }
+  }, [router]);
 
   const handlePersonalInfo = (data) => {
     setRegistrationData(prev => ({ ...prev, ...data }));
@@ -28,11 +39,35 @@ function Registration() {
     const finalData = {
       ...registrationData,
       ...data,
-      role: "6853d418ffcac850f881d5d3" // Default role as specified
+      role: "68629dde1557b3c7e90ce077" // Exact role ID from the screenshot
     };
 
+    // Create FormData object for file upload
+    const formData = new FormData();
+    
+    // Add all fields to FormData exactly as shown in the API screenshot
+    formData.append('fullName', finalData.fullName);
+    formData.append('email', finalData.email);
+    formData.append('phoneNumber', finalData.phoneNumber);
+    formData.append('bio', finalData.bio);
+    formData.append('countryOfPractice', finalData.countryOfPractice);
+    formData.append('medicalQualification', finalData.medicalQualification);
+    formData.append('yearOfGraduation', finalData.yearOfGraduation);
+    formData.append('hasFormalTrainingInPalliativeCare', finalData.hasFormalTrainingInPalliativeCare);
+    formData.append('medicalRegistrationAuthority', finalData.medicalRegistrationAuthority);
+    formData.append('medicalRegistrationNumber', finalData.medicalRegistrationNumber);
+    formData.append('affiliatedPalliativeAssociations', finalData.affiliatedPalliativeAssociations);
+    formData.append('specialInterestsInPalliativeCare', finalData.specialInterestsInPalliativeCare);
+    formData.append('password', finalData.password);
+    formData.append('role', finalData.role);
+    
+    // Handle file upload - use 'file' as the field name as shown in the screenshot
+    if (finalData.photo instanceof File) {
+      formData.append('file', finalData.photo);
+    }
+
     try {
-      const response = await registerUser(finalData);
+      const response = await registerUser(formData);
       if (response.error) {
         console.error('Registration failed:', response.error);
         // You can add error handling UI here

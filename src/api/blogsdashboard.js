@@ -137,11 +137,87 @@ export const deleteComment = async (commentId) => {
     };
   }
 };
- 
 
+// Fetch a blog by ID
+export const fetchBlogById = async (blogId) => {
+  try {
+    const response = await Api.post(blogRoute.FetchNewsAndBlogsById, {
+      _id: blogId
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error fetching blog by ID:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to fetch blog",
+      data: null
+    };
+  }
+};
 
+// Comment likes
+export const likeComment = async (commentId, userId) => {
+  try {
+    const response = await Api.patch(blogRoute.commentlikes, {
+      commentId,
+      userId
+    });
+    console.log('Like comment response:', response);
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error liking comment:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to like comment"
+    };
+  }
+};
 
+// Comment dislikes
+export const dislikeComment = async (commentId, userId) => {
+  try {
+    const response = await Api.patch(blogRoute.commentdislikes, {
+      commentId,
+      userId
+    });
+    console.log('Dislike comment response:', response);
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error disliking comment:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to dislike comment"
+    };
+  }
+};
 
-
-
-
+// Add reply to a comment
+export const addReply = async (commentId, userId, content) => {
+  try {
+    const response = await Api.patch(blogRoute.realtimeReplies, {
+      commentId,
+      userId,
+      content
+    });
+    console.log('Add reply response:', response);
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error adding reply:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to add reply"
+    };
+  }
+};

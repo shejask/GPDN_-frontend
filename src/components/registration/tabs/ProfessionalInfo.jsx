@@ -51,7 +51,7 @@ function ProfessionalInfo({ onContinue }) {
     const handleSubmit = () => {
         if (validateForm()) {
             onContinue({
-                photo: formData.photo,
+                photo: formData.photo, // This will be the File object for upload
                 countryOfPractice: formData.countryOfPractice,
                 medicalQualification: formData.medicalQualification,
                 yearOfGraduation: parseInt(formData.yearOfGraduation),
@@ -77,13 +77,19 @@ function ProfessionalInfo({ onContinue }) {
                     </div>
                     <Input
                         size="large"
-                        type="text"
-                        name="photo"
-                        value={formData.photo}
-                        onChange={handleChange}
+                        type="file"
+                        name="file"
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    photo: file
+                                }));
+                            }
+                        }}
                         className="w-96 text-sm"
-                        placeholder="Profile picture URL"
-                        prefix={<UserOutlined className="text-lg mr-1" />}
+                        accept="image/*"
                     />
                     {errors.photo && <span className="text-red-500 text-xs">{errors.photo}</span>}
                 </div>

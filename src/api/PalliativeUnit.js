@@ -15,9 +15,11 @@ export const fetchPalliativeUnits = async () => {
 
 export const searchPalliativeUnit = async (searchInp) => {
     try {
-      const response = await Api.get(palliativeRoutes.searchPalliativeUnit, {
-        searchInp,
+      console.log('Search payload:', { searchInp });
+      const response = await Api.post(palliativeRoutes.searchPalliativeUnit, {
+        searchInp
       });
+      console.log('Search API response:', response);
       return response;
     } catch (error) {
       console.error("Error searching palliative unit:", error);

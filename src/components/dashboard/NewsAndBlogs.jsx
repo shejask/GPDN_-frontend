@@ -198,23 +198,32 @@ const NewsAndBlogs = () => {
                   <div key={post._id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <div className="p-3">
                       <div className="flex items-center h-10 gap-3 mb-4">
-                        <div>
-                          <h3 className="font-medium w-96">{post.authorId}</h3>
-                          <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</p>
+                        <div className="flex items-center gap-2 w-full">
+                          <Image
+                            alt="Author"
+                            src={post.authorId?.imageURL || '/default-avatar.png'}
+                            width={32}
+                            height={32}
+                            className="w-11 h-11 rounded-full object-cover  "
+                            />
+                          <div>
+                            <h3 className="font-medium">{post.authorId?.fullName || 'Anonymous'}</h3>
+                            <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</p>
+                          </div>
                         </div>
                       </div>
-                      {post.imageURL && (
-                        <div className='w-full h-60 rounded-xl mb-2'>
-                          <Image 
-                            src={post.imageURL} 
-                            alt={post.title}
-                            width={500}
-                            height={300}
-                            className='w-full h-full object-cover rounded-2xl'
-                          />
-                        </div>
-                      )}
                       <Link href={`/news-blogs/${post._id}`}>
+                        {post.thumbnail && (
+                          <div className='w-full h-60 rounded-xl mb-2'>
+                            <Image 
+                              src={post.thumbnail} 
+                              alt={post.title}
+                              width={500}
+                              height={300}
+                              className='w-full h-full object-cover rounded-2xl'
+                            />
+                          </div>
+                        )}
                         <div className="mb-4">
                           <span className="text-sm text-[#00A99D]">{post.category}</span>
                           <h2 className="text-xl font-semibold mt-2">{post.title}</h2>

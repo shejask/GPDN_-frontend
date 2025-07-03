@@ -16,6 +16,65 @@ body {
   }
 }
 
+/* React Quill Editor Styles */
+.quill {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background-color: #f9fafb;
+  padding: 0.75rem !important;
+}
+
+.ql-container.ql-snow {
+  border: none !important;
+  font-family: var(--font-urbanist);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.ql-editor {
+  min-height: 200px !important;
+  padding: 1rem !important;
+}
+
+.ql-editor p {
+  margin-bottom: 1rem;
+}
+
+.ql-editor h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.ql-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.ql-snow .ql-toolbar button:hover,
+.ql-snow .ql-toolbar button:focus,
+.ql-snow .ql-toolbar button.ql-active {
+  color: #00A99D;
+}
+
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button:focus .ql-stroke,
+.ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #00A99D;
+}
+
+.ql-snow .ql-toolbar button:hover .ql-fill,
+.ql-snow .ql-toolbar button:focus .ql-fill,
+.ql-snow .ql-toolbar button.ql-active .ql-fill {
+  fill: #00A99D;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

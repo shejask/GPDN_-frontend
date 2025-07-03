@@ -1,25 +1,30 @@
+/**
+ * Forum API endpoint definitions
+ * Organized by HTTP method and functionality
+ */
 const forumRoutes = {
-    // Thread Operations
-    AddThread: "/thread/AddThread",
-    EditThread: "/thread/EditThread",
-    DeleteThread: "/thread/DeleteThread",
-    ThreadUpvote: "/thread/ThreadUpvote",
-    ThreadDownvote: "/thread/ThreadDownvote",
-    ThreadShares: "/thread/ThreadShares",
-    ThreadFilter: "/thread/ThreadFilter",
-    ThreadSearch: "/thread/ThreadSearch",
-
-
-    //fetch threads
-    Threadfetch: "/admin/fetchThreads",
-
-    // Comment Operations
-    AddComment: "/thread/AddComment",
-    EditComment: "/thread/EditComment",
-    DeleteComment: "/thread/DeleteComment",
-    CommentLikes: "/thread/CommentLikes",
-    CommentDislikes: "/thread/CommentDislikes",
-    RealTimeReplies: "/thread/Real-time-replies"
+    // GET Methods
+    fetchThread: "/thread/FetchThread",
+    
+    // POST Methods
+    addThread: "/thread/AddThread",
+    deleteThread: "/thread/DeleteThread",
+    threadSearch: "/thread/ThreadSearch",
+    threadFilter: "/thread/ThreadFilter",
+    addComment: "/thread/AddComment",
+    deleteComment: "/thread/DeleteComment",
+    
+    // PATCH Methods
+    editThread: "/thread/EditThread",
+    threadUpvote: "/thread/ThreadUpvote",
+    threadDownvote: "/thread/ThreadDownvote",
+    threadShares: "/thread/ThreadShares",
+    editComment: "/thread/EditComment",
+    commentLikes: "/thread/CommentLikes",
+    commentDislikes: "/thread/CommentDislikes",
+    realTimeReplies: "/thread/Real-time-replies",
+    
+ 
 };
 
 export default forumRoutes;

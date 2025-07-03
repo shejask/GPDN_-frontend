@@ -1,5 +1,6 @@
 import { Urbanist, Poppins } from "next/font/google";
 import "./globals.css";
+import AntdCompatibilityProvider from "@/providers/AntdCompatibilityProvider";
 
 
 const urbanist = Urbanist({
@@ -49,9 +50,9 @@ export default function RootLayout({children}) {
                 <meta property="og:type" content="website"/>
             </head>
             <body className={`${urbanist.className} ${poppins.variable}`}>
-             
+             <AntdCompatibilityProvider>
                 {children}
-               
+             </AntdCompatibilityProvider>
                 </body>
         </html>
     );

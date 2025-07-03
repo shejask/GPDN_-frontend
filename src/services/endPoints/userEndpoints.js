@@ -3,8 +3,11 @@ const userRoutes = {
   userRegister: "/user/register",
   userLogin: "/user/Login",
   resetPassword: "/user/ResetORForgotPassword",
-  userProfile: "/user/fetchUserById",  // Will be called with ?_id=userId
+  userProfile: "/user/fetchUserById",   
   editProfile: "/user/EditUser",
+  verifyOTP: "/user/VerifyOtp",
+  sendOTP: "/user/sendOtp",
+  
 };
 
 export default userRoutes;

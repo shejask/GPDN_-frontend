@@ -1,8 +1,6 @@
 const blogRoutes = {
   // Blog posts endpoints
   FetchNewsAndBlogs: "/blog/FetchNewsAndBlogs",
-  editNewsAndBlogs: "/blog/EditNewsAndBlogs",
-  deleteNewsAndBlogs: "/blog/DeleteNewsAndBlogs",
   dislikeNewsAndBlogs: "/blog/NewsAndBlogsDislike",
   likeNewsAndBlogs: "/blog/NewsAndBlogsLike",
   SearchNewsAndBlogs: "/blog/SearchNewsAndBlogs",
@@ -12,8 +10,10 @@ const blogRoutes = {
   // Comment endpoints
   addComment: "/blog/AddComment",
   editComment: "/blog/EditComment",
-  deleteComment: "/blog/DeleteComment"
+  deleteComment: "/blog/DeleteComment",
+  commentlikes: "/blog/CommentLikes",
+  commentdislikes: "/blog/CommentDislikes",
+  realtimeReplies: "/blog/Real-time-replies"
 };
   
-  export default blogRoutes;
-  
+export default blogRoutes;  
