@@ -3,7 +3,7 @@
 // Import the compatibility utilities
 import '../utils/antdCompatible';
 import React, { useEffect } from 'react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App, message } from 'antd';
 
 // Provider component that applies Ant Design compatibility settings
 export function AntdCompatibilityProvider({ children }) {
@@ -20,12 +20,15 @@ export function AntdCompatibilityProvider({ children }) {
       theme={{
         token: {
           // You can customize theme tokens here if needed
+          colorPrimary: '#00A99D',
         },
         // Enable legacy compatibility mode
         hashed: true,
       }}
     >
-      {children}
+      <App message={message}>
+        {children}
+      </App>
     </ConfigProvider>
   );
 }

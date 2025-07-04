@@ -15,10 +15,7 @@ const nextConfig = {
       }
     ];
   },
-  // Enable experimental features for better CORS handling
-  experimental: {
-    allowMiddlewareResponseBody: true,
-  },
+  // Experimental features section removed as allowMiddlewareResponseBody is no longer supported
   // Expand transpilePackages to include all required Ant Design packages
   transpilePackages: [
     'antd',

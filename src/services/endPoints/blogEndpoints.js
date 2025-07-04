@@ -6,6 +6,9 @@ const blogRoutes = {
   SearchNewsAndBlogs: "/blog/SearchNewsAndBlogs",
   FetchNewsAndBlogsById: "/blog/FetchNewsAndBlogsById",
   createNewsAndBlogs: "/blog/AddNewsAndBlogs",
+  filterNewsAndBlogs: "/blog/filterNewsAndBlogs",
+  filterBlogsbyCategory: "/blog/categoryBasedBlog",
+
   
   // Comment endpoints
   addComment: "/blog/AddComment",

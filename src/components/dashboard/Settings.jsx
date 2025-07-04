@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import { fetchUserById, editUserProfile, sendOTP, verifyOTP, requestActivationLink } from '../../api/user';
 import Image from 'next/image';
 import { Input, message, Select, Modal, Alert, Button, Tooltip } from 'antd';
 import logo from '../../app/assets/registation/logo.png';
@@ -15,70 +16,20 @@ import { PiSignInBold } from "react-icons/pi";
 import { CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-import { fetchUserById, sendOTP, verifyOTP, requestActivationLink } from '../../api/user';
 import UserResources from './UserResources';
 import UserDiscussions from './UserDiscussions';
 
 const defaultAvatar = `data:image/svg+xml,${encodeURIComponent('<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="40" fill="#E5E7EB"/><path d="M40 42C46.6274 42 52 36.6274 52 30C52 23.3726 46.6274 18 40 18C33.3726 18 28 23.3726 28 30C28 36.6274 33.3726 42 40 42ZM56 60C56 52.268 48.837 46 40 46C31.163 46 24 52.268 24 60V62H56V60Z" fill="#9CA3AF"/></svg>')}`;
 
-// API function to update user profile
-const updateUserProfile = async (userId, userData, fileData) => {
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  console.log('Response status:', response.status);
+  
   try {
-    // Get the token from localStorage
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      console.error('No auth token found');
-      return { success: false, message: 'Authentication token not found' };
-    }
-    
-    // Create FormData for multipart/form-data request (for file upload)
-    const formData = new FormData();
-    
-    // Add user ID - use the exact field name expected by the API
-    formData.append('userId', userId);
-    
-    // Log what we're sending for debugging
-    console.log('Updating user profile with ID:', userId);
-    
-    // Add all text fields to FormData
-    Object.keys(userData).forEach(key => {
-      // Skip file field as it will be handled separately
-      if (key !== 'file') {
-        formData.append(key, userData[key]);
-        console.log(`Adding field ${key}:`, userData[key]);
-      }
-    });
-    
-    // Add file if provided
-    if (fileData) {
-      formData.append('file', fileData);
-      console.log('Adding file:', fileData.name);
-    }
-    
-    // Set role ID to the correct value from the registration example
-    // Using the same role ID as in registration
-    formData.append('role', "68629dde1557b3c7e90ce077");
-    
-    console.log('Sending PATCH request to EditUser endpoint');
-    
-    const response = await fetch('https://api.thegpdn.org/api/user/EditUser', {
-      method: 'PATCH',
-      headers: {
-        // Don't set Content-Type for FormData, browser will set it with boundary
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    // Log the response status for debugging
-    console.log('Response status:', response.status);
-    
-    // Parse the response as JSON
     const data = await response.json();
     console.log('Response data:', data);
     
-    // Check if the request was successful based on the API response
-    if (!response.ok) {
+    if (!response.ok || !data.success) {
       return { 
         success: false, 
         message: data.message || 'Failed to update profile',
@@ -89,17 +40,19 @@ const updateUserProfile = async (userId, userData, fileData) => {
     return { 
       success: true, 
       message: 'Profile updated successfully',
-      data: data.data || data
+      data: data.data // The API returns user data in the 'data' property
     };
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    return { 
-      success: false, 
-      message: 'An error occurred while updating the profile',
-      error: error.message
+  } catch (parseError) {
+    console.error('Error parsing response:', parseError);
+    return {
+      success: false,
+      message: `Error parsing response: ${parseError.message}`,
+      error: parseError
     };
   }
 };
+
+import { updateUserProfileWithFile } from "../../api/user";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('Account');
@@ -220,29 +173,54 @@ const Settings = () => {
         return;
       }
 
-      // Log the data we're about to send
-      console.log('Form data being sent:', formData);
-      console.log('Profile image being sent:', profileImage);
+      // Prepare data for the API call
+      const userData = {
+        ...formData,
+        role: "68629dde1557b3c7e90ce077"
+      };
       
-      // Pass both form data and file data to the update function
-      const response = await updateUserProfile(userId, formData, profileImage);
+      // If no new profile image is selected, include the existing image URL
+      if (!profileImage && userProfile?.imageURL) {
+        userData.existingImageURL = userProfile.imageURL;
+        console.log('Preserving existing image URL:', userProfile.imageURL);
+      }
+      
+      // Log the data we're about to send
+      console.log('User data being sent:', userData);
+      console.log('Profile image being sent:', profileImage ? profileImage.name : 'None');
+      
+      // Use the new updateUserProfileWithFile function from user.js
+      const response = await updateUserProfileWithFile(userId, userData, profileImage);
       console.log('Update profile response:', response);
       
-      if (response && response.success) {
-        message.success('Profile updated successfully!');
+      // Check for success in the response
+      if (response && !response.error) {
+        // Success can be in response.success or in the data object
+        const responseData = response.data || (response.data?.data) || {};
         
-        // Update the user profile state with the new data
-        // If we got data back from the server, use that, otherwise use our form data
-        if (response.data) {
-          setUserProfile(prev => ({
-            ...prev,
-            ...response.data
-          }));
-        } else {
-          setUserProfile(prev => ({
-            ...prev,
-            ...formData
-          }));
+        message.success('Profile updated successfully!');
+        console.log('Profile updated with data:', responseData);
+        
+        // Update the user profile state with the new data from the API response
+        if (responseData) {
+          // The API returns the complete updated user profile
+          setUserProfile(responseData);
+          
+          // Also update the form data with the latest values from the API
+          setFormData({
+            fullName: responseData.fullName || '',
+            phoneNumber: responseData.phoneNumber || '',
+            email: responseData.email || '',
+            countryOfPractice: responseData.countryOfPractice || '',
+            bio: responseData.bio || '',
+            medicalQualification: responseData.medicalQualification || '',
+            yearOfGraduation: responseData.yearOfGraduation || '',
+            medicalRegistrationAuthority: responseData.medicalRegistrationAuthority || '',
+            medicalRegistrationNumber: responseData.medicalRegistrationNumber || '',
+            hasFormalTrainingInPalliativeCare: responseData.hasFormalTrainingInPalliativeCare || false,
+            affiliatedPalliativeAssociations: responseData.affiliatedPalliativeAssociations || '',
+            specialInterestsInPalliativeCare: responseData.specialInterestsInPalliativeCare || ''
+          });
         }
         
         setIsEditing(false);
@@ -250,12 +228,30 @@ const Settings = () => {
       } else {
         // Show the specific error message from the API if available
         const errorMsg = response?.message || 'Failed to update profile';
-        console.error('Profile update failed:', errorMsg, response?.error);
-        message.error(errorMsg);
+        console.error('Profile update failed:', errorMsg);
+        console.error('Error details:', response?.error);
+        
+        // Display a more detailed error message to the user
+        message.error({
+          content: errorMsg,
+          duration: 5, // Show for 5 seconds
+          style: { marginTop: '20px' }
+        });
       }
     } catch (error) {
       console.error('Error in handleUpdate function:', error);
-      message.error('An unexpected error occurred. Please try again.');
+      console.error('Error stack:', error.stack);
+      
+      // Display a more helpful error message based on the error type
+      if (error.message && error.message.includes('network')) {
+        message.error('Network error: Please check your internet connection');
+      } else {
+        message.error({
+          content: `Error updating profile: ${error.message || 'Unknown error'}`,
+          duration: 5,
+          style: { marginTop: '20px' }
+        });
+      }
     } finally {
       setUpdating(false);
     }

@@ -273,7 +273,7 @@ export const editUserProfile = async (userData) => {
       };
     }
 
-    const response = await Api.post(userRoute.editProfile, {
+    const response = await Api.patch(userRoute.editProfile, {
       _id: userId,
       fullName: userData.fullName,
       email: userData.email,
@@ -289,6 +289,7 @@ export const editUserProfile = async (userData) => {
       affiliatedPalliativeAssociations: userData.affiliatedPalliativeAssociations,
       specialInterestsInPalliativeCare: userData.specialInterestsInPalliativeCare,
       password: userData.password,
+      role: userData.role || "68629dde1557b3c7e90ce077"
     });
     
     // Update user data in localStorage if present in response
@@ -298,42 +299,156 @@ export const editUserProfile = async (userData) => {
       const updatedName = response?.data?.data?.fullName || response?.data?.data?.data?.fullName;
       
       if (updatedId) {
-        localStorage.setItem("userId", updatedId);
+        localStorage.setItem('userId', updatedId);
       }
-      
       if (updatedEmail) {
-        localStorage.setItem("userEmail", updatedEmail);
+        localStorage.setItem('userEmail', updatedEmail);
       }
-      
       if (updatedName) {
-        localStorage.setItem("userFullName", updatedName);
+        localStorage.setItem('userName', updatedName);
       }
     } catch (storageError) {
       console.error('Error updating localStorage:', storageError);
-      // Continue even if localStorage update fails
     }
     
     return response;
   } catch (error) {
-    console.error('Edit user profile error:', error);
+    console.error('Error in editUserProfile:', error);
+    return {
+      error: { 
+        message: error.response?.data?.message || error.message || 'Failed to update profile',
+        details: error.response?.data || error
+      },
+      status: error.response?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR
+    };
+  }
+};
+
+/**
+ * Helper function to handle user profile API responses
+ * @param {Object} response - API response
+ * @returns {Object} - Formatted response
+ */
+const handleUserProfileResponse = (response) => {
+  // Check if the response has the expected structure
+  if (!response || !response.data) {
+    console.error('Invalid API response structure:', response);
+    return {
+      error: { message: 'Invalid API response structure' },
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+    };
+  }
+
+  console.log('Raw API response:', response);
+  
+  // Extract the actual user data from the response
+  // The API might return data in different formats:
+  // 1. response.data.data (most common)
+  // 2. response.data.data.data (nested structure)
+  // 3. response.data directly
+  const userData = response.data.data?.data || response.data.data || response.data;
+  
+  console.log('Extracted user data:', userData);
+  
+  // Update user data in localStorage if present in response
+  try {
+    if (userData && userData._id) {
+      localStorage.setItem('userId', userData._id);
+      
+      if (userData.email) {
+        localStorage.setItem('userEmail', userData.email);
+      }
+      
+      if (userData.fullName) {
+        localStorage.setItem('userFullName', userData.fullName); // Fixed key from userName to userFullName
+      }
+      
+      console.log('Updated localStorage with user data');
+    }
+  } catch (storageError) {
+    console.error('Error updating localStorage:', storageError);
+  }
+  
+  // Return a standardized response format
+  return {
+    success: true,
+    data: userData,
+    message: response.data.message || 'Profile updated successfully'
+  };
+};
+
+/**
+ * Update user profile with file upload support
+ * @param {string} userId - User ID
+ * @param {Object} userData - User data fields
+ * @param {File} [fileData] - Optional file to upload as profile image
+ * @returns {Promise<Object>} - API response or error object
+ */
+export const updateUserProfileWithFile = async (userId, userData, fileData) => {
+  try {
+    console.log('Using FormData for profile update');
+    const formData = new FormData();
     
-    // Handle specific error cases
-    if (error.response?.status === HTTP_STATUS.CONFLICT) {
-      return { 
-        error: { message: "Email already in use by another account" },
-        status: HTTP_STATUS.CONFLICT
-      };
+    // Add all user data fields to FormData
+    formData.append('_id', userId);
+    formData.append('fullName', userData.fullName || '');
+    formData.append('email', userData.email || '');
+    formData.append('phoneNumber', userData.phoneNumber || '');
+    formData.append('bio', userData.bio || '');
+    formData.append('countryOfPractice', userData.countryOfPractice || '');
+    formData.append('medicalQualification', userData.medicalQualification || '');
+    formData.append('yearOfGraduation', userData.yearOfGraduation || '');
+    formData.append('hasFormalTrainingInPalliativeCare', userData.hasFormalTrainingInPalliativeCare || false);
+    formData.append('medicalRegistrationAuthority', userData.medicalRegistrationAuthority || '');
+    formData.append('medicalRegistrationNumber', userData.medicalRegistrationNumber || '');
+    formData.append('affiliatedPalliativeAssociations', userData.affiliatedPalliativeAssociations || '');
+    formData.append('specialInterestsInPalliativeCare', userData.specialInterestsInPalliativeCare || '');
+    formData.append('role', userData.role || "68629dde1557b3c7e90ce077");
+    
+    // Handle file upload
+    if (fileData) {
+      // If a new file is provided, add it to the form data
+      formData.append('file', fileData);
+      console.log('Adding file to request:', fileData.name);
+    } else if (userData.existingImageURL) {
+      // If no new file but we have an existing image URL, include it in the form data
+      // Note: The backend expects 'imageURL' field when no file is uploaded
+      formData.append('imageURL', userData.existingImageURL);
+      
+      // IMPORTANT: Add an empty file field to satisfy the backend requirement
+      // This is a workaround for the 'No file uploaded' error
+      const emptyBlob = new Blob([''], { type: 'application/octet-stream' });
+      formData.append('file', emptyBlob, 'empty.txt');
+      
+      console.log('Preserving existing image URL and adding empty file:', userData.existingImageURL);
+    } else {
+      // If no file and no existing image, still add an empty file to avoid the error
+      const emptyBlob = new Blob([''], { type: 'application/octet-stream' });
+      formData.append('file', emptyBlob, 'empty.txt');
+      console.log('No image provided, adding empty file');
     }
     
-    if (error.response?.status === HTTP_STATUS.UNAUTHORIZED) {
-      return { 
-        error: { message: "Session expired. Please login again." },
-        status: HTTP_STATUS.UNAUTHORIZED
-      };
-    }
+    // Log form data entries for debugging
+    console.log('Form data entries:');
+    Array.from(formData.entries()).forEach(pair => {
+      console.log(pair[0] + ': ' + (pair[0] === 'file' ? 'File object' : pair[1]));
+    });
+
+    // Make PATCH request with FormData
+    const response = await Api.patch(userRoute.editProfile, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     
-    return { 
-      error: error.response?.data || { message: 'Failed to update user profile' },
+    return handleUserProfileResponse(response);
+  } catch (error) {
+    console.error('Error in updateUserProfileWithFile:', error);
+    return {
+      error: { 
+        message: error.response?.data?.message || error.message || 'Failed to update profile',
+        details: error.response?.data || error
+      },
       status: error.response?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR
     };
   }

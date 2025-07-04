@@ -221,3 +221,88 @@ export const addReply = async (commentId, userId, content) => {
     };
   }
 };
+
+// Filter blogs by date
+export const filterBlogsByDate = async (date) => {
+  try {
+    const response = await Api.post(blogRoute.filterNewsAndBlogs, {
+      filter: "Date",
+      date: date
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error filtering blogs by date:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to filter blogs by date",
+      data: []
+    };
+  }
+};
+
+// Filter blogs by category using filterNewsAndBlogs endpoint
+export const filterBlogsByCategory = async (category) => {
+  try {
+    const response = await Api.post(blogRoute.filterNewsAndBlogs, {
+      filter: "Category",
+      category: category,
+      date: ""
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error filtering blogs by category:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to filter blogs by category",
+      data: []
+    };
+  }
+};
+
+// Get all categories
+export const getCategories = async () => {
+  try {
+    // This endpoint will return all available categories
+    const response = await Api.post(blogRoute.filterNewsAndBlogs, {
+      filter: "Category",
+      date: ""
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to fetch categories",
+      data: []
+    };
+  }
+};
+
+// Get blogs by specific category
+export const getBlogsByCategory = async (category) => {
+  try {
+    const response = await Api.post(blogRoute.filterBlogsbyCategory, {
+      category: category
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error("Error fetching blogs by category:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "Failed to fetch blogs by category",
+      data: []
+    };
+  }
+};

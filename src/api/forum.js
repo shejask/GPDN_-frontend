@@ -64,6 +64,24 @@ const validateFields = (data, requiredFields) => {
 // ============================================================================
 
 /**
+ * Fetch a thread by ID
+ * @param {string} threadId - ID of the thread to fetch
+ * @returns {Promise<Object>} Response with thread data or error
+ */
+export const fetchThreadById = async (threadId) => {
+  try {
+    if (!threadId) {
+      throw new Error('Thread ID is required');
+    }
+    
+    const response = await Api.get(`${forumRoutes.fetchThread}/${threadId}`);
+    return formatResponse(response);
+  } catch (error) {
+    return formatError(error, 'fetch thread');
+  }
+};
+
+/**
  * Fetch threads from the server
  * @returns {Promise<Object>} Response with threads data or error
  */
@@ -101,17 +119,29 @@ export const createThread = async (threadData) => {
       Object.entries(threadData).forEach(([key, value]) => {
         if (key === 'file') {
           formData.append('file', value);
-        } else if (key === 'tags' && Array.isArray(value)) {
-          formData.append('tags', JSON.stringify(value));
+        } else if (key === 'tags') {
+          // Ensure tags are always sent as a clean JSON array
+          const tagsArray = Array.isArray(value) ? value : [value];
+          formData.append('tags', JSON.stringify(tagsArray));
         } else {
           formData.append(key, value);
         }
       });
     }
     
+    // Ensure tags are properly formatted in the request body when not using FormData
+    let requestData = formData;
+    if (!formData) {
+      // If not using FormData, ensure tags are properly formatted in the request body
+      requestData = {
+        ...threadData,
+        tags: Array.isArray(threadData.tags) ? threadData.tags : [threadData.tags]
+      };
+    }
+    
     const response = await Api.post(
       forumRoutes.addThread, 
-      formData || threadData,
+      requestData,
       formData ? {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -213,7 +243,13 @@ export const editThread = async (threadData) => {
   }
   
   try {
-    const response = await Api.patch(forumRoutes.editThread, threadData);
+    // Ensure tags are properly formatted in the request body
+    const requestData = {
+      ...threadData,
+      tags: threadData.tags ? (Array.isArray(threadData.tags) ? threadData.tags : [threadData.tags]) : []
+    };
+    
+    const response = await Api.patch(forumRoutes.editThread, requestData);
     return formatResponse(response);
   } catch (error) {
     return formatError(error, 'edit thread');

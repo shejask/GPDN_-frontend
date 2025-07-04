@@ -149,9 +149,10 @@ const ResourceLibrary = () => {
     
     try {
       const filePath = files[0];
-      // For URLs from the API response like https://pub-33c4155a02fd4f2aae817c77076bde04.r2.dev/uploads/...
-      // use them directly without modification
-      const fileURL = filePath.startsWith('http') ? filePath : getImageUrl(filePath);
+      // Determine if the file path is already a full URL
+      const isFullUrl = filePath.startsWith('http') || filePath.startsWith('https');
+      // Get the file URL - either use directly or construct it
+      const fileURL = isFullUrl ? filePath : getImageUrl(filePath);
       
       if (!fileURL) {
         throw new Error('Invalid file URL');
@@ -159,39 +160,35 @@ const ResourceLibrary = () => {
 
       console.log('Attempting to download from:', fileURL);
       
-      // Force download approach
+      // Extract filename from the file path for better naming
+      const originalFilename = filePath.split('/').pop() || filePath.split('\\').pop() || 'download';
+      const fileExtension = getFileExtension(filePath) || 'file';
+      const filename = originalFilename.includes('.') ? originalFilename : `${title || originalFilename}.${fileExtension}`;
+      
+      // Method 1: Direct download using Blob
       try {
-        const response = await fetch(fileURL, {
+        // Use 'cors' mode for same-origin requests, but don't specify mode for cross-origin
+        // This lets the browser handle CORS properly
+        const fetchOptions = {
           method: 'GET',
           headers: {
             'Accept': '*/*',
-          },
-          // Don't use CORS mode for external URLs
-          mode: filePath.startsWith('http') ? 'no-cors' : 'cors',
-        });
+            'Cache-Control': 'no-cache'
+          }
+        };
         
-        // For no-cors mode, we can't check response.ok
-        if (response.type !== 'opaque' && !response.ok) {
+        const response = await fetch(fileURL, fetchOptions);
+        
+        if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        // For direct URLs, use window.open as a fallback
-        if (response.type === 'opaque') {
-          window.open(fileURL, '_blank');
-          message.success('Download initiated in new tab');
-          return;
         }
         
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
-        // Extract filename from the file path
-        const originalFilename = filePath.split('/').pop() || filePath.split('\\').pop() || filePath;
-        const filename = originalFilename || `${title || 'download'}.${getFileExtension(filePath) || 'file'}`;
         a.download = filename;
-        a.style.display = 'none'; // Hide the element
+        a.style.display = 'none';
         
         document.body.appendChild(a);
         a.click();
@@ -203,47 +200,47 @@ const ResourceLibrary = () => {
         }, 100);
         
         message.success('File downloaded successfully');
+        return; // Exit if successful
         
       } catch (fetchError) {
-        console.log('Direct fetch failed, trying alternative method:', fetchError);
-        
-        // For direct URLs (like from R2/S3/etc), open in new tab
-        if (filePath.startsWith('http')) {
-          window.open(fileURL, '_blank');
-          message.success('Download initiated in new tab');
-          return;
-        }
-        
-        // Alternative: Create a download link with download attribute
-        try {
-          const a = document.createElement('a');
-          a.href = fileURL;
-          a.download = filePath.split('/').pop() || `${title || 'download'}.${getFileExtension(filePath) || 'file'}`;
-          a.target = '_blank'; // Open in new tab if download attribute doesn't work
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          
-          message.success('Download initiated');
-        } catch (linkError) {
-          console.error('Link download failed:', linkError);
-          throw linkError; // Pass to next fallback
-        }
+        console.log('Blob download failed, trying alternative method:', fetchError);
       }
+      
+      // Method 2: Direct link with download attribute
+      try {
+        const a = document.createElement('a');
+        a.href = fileURL;
+        a.download = filename;
+        a.rel = 'noopener noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(a);
+        }, 100);
+        
+        message.success('Download initiated');
+        return; // Exit if successful
+      } catch (linkError) {
+        console.error('Link download failed:', linkError);
+      }
+      
+      // Method 3: Open in new tab as last resort
+      window.open(fileURL, '_blank');
+      message.success('Opening file in new tab');
       
     } catch (error) {
       console.error('Error downloading file:', error);
+      message.error('Failed to download the file. Please try again later.');
       
-      // Final fallback - try direct URL open
-      try {
-        const directUrl = files[0];
-        window.open(directUrl, '_blank');
-        message.success('Opening file in new tab');
-      } catch (fallbackError) {
-        console.error('Fallback download failed:', fallbackError);
-        message.error('Failed to download the file. Please try opening the link directly.');
-      }
+      // Show more detailed error to help with debugging
+      console.log('Download error details:', {
+        error: error.message,
+        files,
+        title
+      });
     }
   }, [getImageUrl, getFileExtension]);
 
@@ -503,14 +500,14 @@ const ResourceLibrary = () => {
       <p className="text-gray-600 mb-4 leading-relaxed">{resource.description}</p>
       
       {/* HTML Content */}
-        {/* {resource.content && (
+      {resource.content && (
         <div className="mt-4 mb-4 prose max-w-none">
           <div 
             className="text-gray-800 leading-relaxed overflow-auto" 
             dangerouslySetInnerHTML={{ __html: resource.content }}
           />
         </div>
-      )}   */}
+      )}  
       
       {/* Category Tag */}
       {resource.category && (

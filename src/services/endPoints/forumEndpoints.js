@@ -13,6 +13,8 @@ const forumRoutes = {
     threadFilter: "/thread/ThreadFilter",
     addComment: "/thread/AddComment",
     deleteComment: "/thread/DeleteComment",
+    tagsBasedThread: "/thread/tagsBasedThread",
+
     
     // PATCH Methods
     editThread: "/thread/EditThread",

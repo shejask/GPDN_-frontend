@@ -367,7 +367,7 @@ function ResetPasswordPage() {
                 size="large"
                 className="w-96 text-sm"
                 type="text"
-                placeholder="Enter the OTP sent to your email"
+                placeholder="Enter the OTP sent to your phone"
                 value={formData.otp}
                 onChange={(e) => handleInputChange("otp", e.target.value)}
                 onKeyPress={handleKeyPress}

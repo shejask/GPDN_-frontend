@@ -49,11 +49,14 @@ export default function RootLayout({children}) {
                 <meta property="og:url" content="https://gpdnorg.net"/>
                 <meta property="og:type" content="website"/>
             </head>
-            <body className={`${urbanist.className} ${poppins.variable}`}>
-             <AntdCompatibilityProvider>
-                {children}
-             </AntdCompatibilityProvider>
-                </body>
+            <body 
+                className={`${urbanist.className} ${poppins.variable}`}
+                suppressHydrationWarning={true} // Add this to suppress hydration warnings
+            >
+                <AntdCompatibilityProvider>
+                    {children}
+                </AntdCompatibilityProvider>
+            </body>
         </html>
     );
 }

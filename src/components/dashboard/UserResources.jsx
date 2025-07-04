@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Empty, Spin, Card, Tag, Button, message, Modal, Tooltip, Pagination, ConfigProvider } from 'antd';
 import { 
   EyeOutlined, 
@@ -25,6 +26,7 @@ const defaultAvatarPath = '/assets/default-avatar.png';
 const { Meta } = Card;
 
 const UserResources = () => {
+  const router = useRouter();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,7 +84,15 @@ const UserResources = () => {
           resourceData = response.data.data;
         }
         
+        // Filter resources based on registrationStatus or approvalStatus if needed
+        // Uncomment one of these if you want to show only approved resources
+        // resourceData = resourceData.filter(resource => resource.registrationStatus === 'approved');
+        // resourceData = resourceData.filter(resource => resource.approvalStatus === true);
+        
         console.log('Loaded user resources:', resourceData);
+        console.log('Registration status example:', resourceData.length > 0 ? resourceData[0].registrationStatus : 'No resources');
+        console.log('Approval status example:', resourceData.length > 0 ? resourceData[0].approvalStatus : 'No resources');
+        
         setResources(resourceData);
         setTotalResources(resourceData.length);
       } else {
@@ -444,6 +454,15 @@ const UserResources = () => {
                 {/* Content */}
                 <h3 className="text-xl font-bold text-gray-800 mb-2">{resource.title}</h3>
                 <p className="text-gray-600 mb-4 leading-relaxed line-clamp-2">{resource.description}</p>
+                
+                {/* Approval Status */}
+                {resource.approvalStatus === false && (
+                  <div className="mb-3">
+                    <span className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded-md text-sm font-medium border border-yellow-200">
+                      Status: Pending Approval
+                    </span>
+                  </div>
+                )}
                 
                 {/* Category Tag */}
                 {resource.category && (

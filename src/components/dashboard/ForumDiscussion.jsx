@@ -1,9 +1,9 @@
 "use client"
+// This component uses client-side features and should only be rendered on the client
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Input } from 'antd';
-import message from '@/utils/message';
+import { Input, message } from 'antd';
 import Link from 'next/link';
 import { 
   ArrowUpOutlined, 
@@ -128,6 +128,8 @@ const ForumDiscussion = () => {
    * Get current user ID from localStorage
    */
   const getCurrentUserId = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    
     try {
       const userId = localStorage.getItem('userId');
       return userId || null;
@@ -143,15 +145,18 @@ const ForumDiscussion = () => {
       try {
         const userId = localStorage.getItem('userId');
         if (!userId) {
-          router.push('http://localhost:3000/signin');
+          router.push('/signin');
         }
       } catch (error) {
         console.error('Authentication check error:', error);
-        router.push('http://localhost:3000/signin');
+        router.push('/signin');
       }
     };
     
-    checkAuth();
+    // Only run on client-side
+    if (typeof window !== 'undefined') {
+      checkAuth();
+    }
   }, [router]);
 
   // ========================================================================
@@ -161,7 +166,7 @@ const ForumDiscussion = () => {
   const RETRY_DELAY = 1000;
 
   const tags = [
-    'Pain Management', 'Ethical Issues', 'End-of-Life Care', 'Spiritual Care',
+    'laundry', 'a', 'End-of-Life Care', 'Spiritual Care',
     'Psychosocial Support', 'New Virus', 'Symptom Control', 'Lifestyle',
     'Caregiver Support', 'Pediatric Palliative Care'
   ];
@@ -189,30 +194,48 @@ const ForumDiscussion = () => {
       // Parse tags safely
       let parsedTags = [];
       if (thread.tags?.length > 0) {
-        // Try to parse the first element if it's a JSON string
-        try {
-          const tagItem = thread.tags[0];
+        // Process each tag in the array
+        parsedTags = thread.tags.flatMap(tagItem => {
           if (typeof tagItem === 'string') {
-            // Handle case where tag is a JSON string array
-            if (tagItem.startsWith('["') && tagItem.endsWith('"]')) {
-              parsedTags = JSON.parse(tagItem);
+            // Remove any leading/trailing spaces
+            const trimmedTag = tagItem.trim();
+            
+            // Case 1: Tag is a JSON string array with escaped quotes
+            if (trimmedTag.includes('"')) {
+              try {
+                // Handle the case with spaces and escaped quotes
+                const cleanedTag = trimmedTag.replace(/^\s*\[|\]\s*$/g, '');
+                return cleanedTag.split(',').map(t => 
+                  t.trim().replace(/^"|"$/g, '')
+                );
+              } catch {
+                return [trimmedTag];
+              }
             } 
-            // Handle case where tag is a plain JSON array
-            else if (tagItem.startsWith('[') && tagItem.endsWith(']')) {
-              parsedTags = JSON.parse(tagItem);
+            // Case 2: Tag is a plain JSON array
+            else if (trimmedTag.startsWith('[') && trimmedTag.endsWith(']')) {
+              try {
+                return JSON.parse(trimmedTag);
+              } catch {
+                return [trimmedTag];
+              }
             }
-            // Handle plain string tags
+            // Case 3: Plain string tag
             else {
-              parsedTags = [tagItem];
+              return [trimmedTag];
             }
+          } else if (Array.isArray(tagItem)) {
+            // If it's already an array, use it directly
+            return tagItem;
           } else {
-            // If not a string, use as is
-            parsedTags = Array.isArray(thread.tags) ? thread.tags : [];
+            // If not a string or array, convert to string
+            return [String(tagItem)];
           }
-        } catch (parseError) {
-          console.error('Error parsing tags:', parseError);
-          parsedTags = Array.isArray(thread.tags) ? thread.tags : [];
-        }
+        });
+
+        // Debug the parsed tags
+        console.log('Original tags:', thread.tags);
+        console.log('Parsed tags:', parsedTags);
       }
 
       // Format time safely
@@ -232,10 +255,11 @@ const ForumDiscussion = () => {
       // Strip HTML tags safely
       const stripHtml = (html) => {
         if (!html) return '';
+        
+        // Server-side safe HTML stripping
         try {
-          const tmp = document.createElement('div');
-          tmp.innerHTML = html;
-          return tmp.textContent || tmp.innerText || '';
+          // Simple regex to strip HTML tags
+          return html.replace(/<[^>]*>/g, '');
         } catch {
           return html;
         }

@@ -65,7 +65,7 @@ const RichTextEditor = forwardRef((_, ref) => {
 
 // Constants for validation
 const MAX_TITLE_LENGTH = 100;
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 2; // Reduced from 5MB to 2MB to avoid 413 errors
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'];
 const MAX_TAGS = 10;
 
@@ -263,20 +263,87 @@ const CreatePost = () => {
     
     const error = validateField('file', selectedFile);
     if (!error) {
-      setFile(selectedFile);
-      
-      // Create preview URL for the image
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFilePreview(reader.result);
-      };
-      reader.readAsDataURL(selectedFile);
+      // Check if file needs compression
+      if (selectedFile.size > 1 * 1024 * 1024) { // If larger than 1MB
+        messageApi.info('Compressing image to reduce size...');
+        compressImage(selectedFile);
+      } else {
+        setFile(selectedFile);
+        
+        // Create preview URL for the image
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFilePreview(reader.result);
+        };
+        reader.readAsDataURL(selectedFile);
+      }
     } else {
       messageApi.error(error);
     }
     
     setFormTouched(true);
   }, [validateField, messageApi]);
+  
+  /**
+   * Compress image to reduce file size
+   * @param {File} imageFile - The image file to compress
+   */
+  const compressImage = useCallback((imageFile) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(imageFile);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions while maintaining aspect ratio
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Get compressed image as data URL
+        const quality = 0.7; // Adjust quality (0.7 = 70% quality)
+        const dataUrl = canvas.toDataURL(imageFile.type, quality);
+        
+        // Convert data URL to Blob
+        fetch(dataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            // Create a File from the Blob
+            const compressedFile = new File([blob], imageFile.name, {
+              type: imageFile.type,
+              lastModified: Date.now()
+            });
+            
+            setFile(compressedFile);
+            setFilePreview(dataUrl);
+            
+            const compressionRatio = ((imageFile.size - compressedFile.size) / imageFile.size * 100).toFixed(1);
+            messageApi.success(`Image compressed by ${compressionRatio}%`);
+          });
+      };
+    };
+  }, [messageApi]);
   
   /**
    * Reset form to initial state

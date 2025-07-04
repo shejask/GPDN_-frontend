@@ -556,18 +556,20 @@ const BlogDetail = ({ id }) => {
               </button>
             </div>
 
-            {/* Author Info */}
+            {/* Author Info - Commented out as requested */}
             <div className="flex items-center gap-3 mb-6">
+              {/* Author image commented out
               <Image
                 src={typeof blog.authorId === 'object' ? blog.authorId?.imageURL : '/default-avatar.png'}
                 alt={typeof blog.authorId === 'object' ? blog.authorId?.fullName : 'Author'}
                 width={20}
                 height={20}
                 className="w-10 h-10 rounded-full object-cover"
-              />
+              /> */}
               <div>
+                {/* Author name commented out
                 <h3 className="font-medium">{typeof blog.authorId === 'object' ? blog.authorId?.fullName : 'Anonymous'}</h3>
-                <p className="text-sm text-gray-500">Author</p>
+                <p className="text-sm text-gray-500">Author</p> */}
               </div>
             </div>
 

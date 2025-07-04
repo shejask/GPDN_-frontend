@@ -1,37 +1,56 @@
 "use client";
 
-import { message as antdMessage } from 'antd';
+import { message as antdMessage, App } from 'antd';
+import React, { createContext, useContext, useRef } from 'react';
 
-// Create a simple wrapper around antd message API that works in client-side only
+// Create a context for the message instance
+const MessageContext = createContext(null);
 
-// Create a simpler message API that works in client-side only
-const customMessage = {
+// Create a statically accessible message instance
+let staticMessage = null;
+
+// Message provider component that uses Ant Design's App component
+export function MessageProvider({ children }) {
+  return (
+    <App message={antdMessage}>
+      {children}
+    </App>
+  );
+}
+
+// Custom hook to use message within components
+export function useMessage() {
+  return antdMessage;
+}
+
+// Create a message API that works properly with Ant Design v5
+const message = {
   success: (content, duration, onClose) => {
-    // Only run on client-side
     if (typeof window !== 'undefined') {
-      antdMessage.success(content, duration, onClose);
+      // Use App's message context
+      return antdMessage.success(content, duration, onClose);
     }
   },
   error: (content, duration, onClose) => {
     if (typeof window !== 'undefined') {
-      antdMessage.error(content, duration, onClose);
+      return antdMessage.error(content, duration, onClose);
     }
   },
   warning: (content, duration, onClose) => {
     if (typeof window !== 'undefined') {
-      antdMessage.warning(content, duration, onClose);
+      return antdMessage.warning(content, duration, onClose);
     }
   },
   info: (content, duration, onClose) => {
     if (typeof window !== 'undefined') {
-      antdMessage.info(content, duration, onClose);
+      return antdMessage.info(content, duration, onClose);
     }
   },
   loading: (content, duration, onClose) => {
     if (typeof window !== 'undefined') {
-      antdMessage.loading(content, duration, onClose);
+      return antdMessage.loading(content, duration, onClose);
     }
   }
 };
 
-export default customMessage;
+export default message;

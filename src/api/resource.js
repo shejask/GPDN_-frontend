@@ -1,4 +1,5 @@
 import Api from "../services/axios";
+import axios from 'axios';
 import resourceRoutes from "../services/endPoints/resourceEndpoints";
 
 // Fetch all resources with improved error handling
@@ -33,6 +34,61 @@ export const fetchResources = async (params = {}) => {
   }
 };
 
+// Fetch a single resource by ID
+export const fetchResourceById = async (resourceId) => {
+  try {
+    if (!resourceId) {
+      throw new Error('Resource ID is required');
+    }
+
+    console.log(`Fetching resource with ID: ${resourceId}`);
+    
+    // Log the token to check if authentication is working
+    const token = localStorage.getItem('token');
+    console.log('Authentication token available:', !!token);
+    
+    // Use POST request with resourceId in the request body as expected by the API
+    // Format exactly like the fetchResourceByAuthorId example
+    const response = await Api.post(resourceRoutes.fetchResourceById, {
+      resourceId: resourceId
+    });
+    
+    console.log('API response data:', response.data);
+    
+    // Check if we have a valid response with data
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Resource not found');
+    }
+    
+    // Extract the resource from the response data array if needed
+    const resourceData = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+    
+    if (!resourceData) {
+      throw new Error('Resource not found');
+    }
+    
+    return {
+      success: true,
+      data: resourceData,
+      message: 'Resource fetched successfully'
+    };
+  } catch (error) {
+    console.error("Error fetching resource:", error);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    return {
+      success: false,
+      data: null,
+      error: error.response?.data?.message || error.message || "Failed to fetch resource",
+      status: error.response?.status || 500
+    };
+  }
+};
+
 // Fetch resources by author ID
 export const fetchResourcesByAuthor = async (authorId) => {
   try {
@@ -41,7 +97,7 @@ export const fetchResourcesByAuthor = async (authorId) => {
     }
 
     // Using POST method with authorId in the request body
-    const response = await Api.post("https://api.thegpdn.org/api/resource/fetchResourceByAuthorId", {
+    const response = await Api.post(resourceRoutes.fetchResourceByAuthor, {
       authorId: authorId
     });
     
@@ -104,11 +160,39 @@ export const updateResource = async (resourceId, resourceData) => {
       throw new Error('Resource ID is required');
     }
 
-    const response = await Api.put(`${resourceRoutes.editResource}/${resourceId}`, resourceData, {
+    console.log('Updating resource with ID:', resourceId);
+    console.log('Resource data type:', resourceData instanceof FormData ? 'FormData' : typeof resourceData);
+    
+    let requestData;
+    
+    // Handle FormData vs regular object
+    if (resourceData instanceof FormData) {
+      // If FormData, append the ID to it
+      requestData = resourceData;
+      requestData.append('_id', resourceId);
+      
+      // Log FormData entries for debugging
+      console.log('FormData entries:');
+      for (let pair of requestData.entries()) {
+        console.log(pair[0] + ': ' + (pair[0] === 'file' ? 'File object' : pair[1]));
+      }
+    } else {
+      // If regular object, spread it and add the ID
+      requestData = {
+        _id: resourceId,
+        ...resourceData
+      };
+      console.log('Request data:', requestData);
+    }
+
+    // Using PATCH method with the correct endpoint format
+    const response = await Api.patch(resourceRoutes.editResource, requestData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': resourceData instanceof FormData ? 'multipart/form-data' : 'application/json',
       },
     });
+    
+    console.log('Update resource response:', response);
     
     return {
       success: true,
