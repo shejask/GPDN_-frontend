@@ -43,6 +43,9 @@ const Navbar = () => {
                     <Link href={'/contact'}>
                         <button className=''>Contact</button>
                     </Link>
+                    <Link href={'/Palliative-home'}>
+                        <button className=''>Palliative</button>
+                    </Link>
                 </div>
             </div>
 

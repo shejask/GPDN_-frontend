@@ -4,9 +4,9 @@
  */
 const forumRoutes = {
     // GET Methods
-    fetchThread: "/thread/FetchThread",
+    fetchThread: "/thread/fetchThread",
     fetchtags: "/thread/ThreadFilter",
-    
+     
     // POST Methods
     addThread: "/thread/AddThread",
     deleteThread: "/thread/DeleteThread",
@@ -15,6 +15,8 @@ const forumRoutes = {
     addComment: "/thread/AddComment",
     deleteComment: "/thread/DeleteComment",
     tagsBasedThread: "/thread/tagsBasedThread",
+    fetchThreadById: "/thread/threadById",
+
 
     
     // PATCH Methods
