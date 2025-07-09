@@ -11,6 +11,7 @@ import {
   FaTrash,
   FaEye,
   FaShare,
+  FaRegEdit,
 } from "react-icons/fa";
 import { IoSearchOutline } from "react-icons/io5";
 import { Modal, Spin, Input, message, Button, Tag } from "antd";
@@ -20,6 +21,8 @@ import { fetchThreads, deleteThread } from "../../api/forum";
 import dynamic from "next/dynamic";
 
 import RichTextEditor from "./RichTextEditor";
+import { FaDeleteLeft, FaTrashCan } from "react-icons/fa6";
+import { MdEdit } from "react-icons/md";
 
 // Sample data for tags and sidebar
 const TAGS = [
@@ -394,40 +397,27 @@ const UserDiscussions = () => {
             />
           )}
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-800">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-800 text-lg">
             {discussion.authorId?.fullName || "You"}
           </h3>
           <span className="text-sm text-gray-500">
             {formatDate(discussion.createdAt)}
           </span>
         </div>
+        <div className="text-gray-400">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+          </svg>
+        </div>
       </div>
 
-      {/* Thumbnail */}
-      {discussion.thumbnail && (
-        <div className="mb-4">
-          <div className="border rounded-lg overflow-hidden bg-gray-50">
-            <img
-              src={discussion.thumbnail}
-              alt={discussion.title}
-              className="w-full rounded-lg shadow-sm"
-              style={{
-                maxHeight: "300px",
-                objectFit: "contain",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Content */}
-      <h3 className="text-xl font-bold text-gray-800 mb-2">
-        {discussion.title}
-      </h3>
-      <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">
-        {discussion.content}
-      </p>
+      <div className="mb-4">
+        <p className="text-gray-700 leading-relaxed mb-4">
+          {discussion.content}
+        </p>
+      </div>
 
       {/* Tags */}
       {discussion.tags && discussion.tags.length > 0 && (
@@ -435,7 +425,7 @@ const UserDiscussions = () => {
           {discussion.tags.map((tag, index) => (
             <span
               key={index}
-              className="px-4 py-2 bg-gradient-to-r from-[#E3F5FE] to-[#F0FFFE] text-[#00A99D] rounded-full text-sm font-medium border border-[#00A99D]/20"
+              className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium"
             >
               {tag}
             </span>
@@ -443,51 +433,66 @@ const UserDiscussions = () => {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="flex items-center gap-6 mb-4 text-gray-600">
-        <div className="flex items-center gap-2">
-          <FaHeart className="text-red-500" />
-          <span className="text-sm">{discussion.upvotes}</span>
+      {/* Thumbnail */}
+      {discussion.thumbnail && (
+        <div className="mb-4">
+          <div className="rounded-lg overflow-hidden ">
+            <img
+              src={discussion.thumbnail}
+              alt={discussion.title}
+              className="w-full md:w-96 rounded-lg"
+              style={{
+                maxHeight: "300px",
+                objectFit: "cover",
+              }}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <FaHeartBroken className="text-gray-400" />
-          <span className="text-sm">{discussion.downvotes}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <FaComment className="text-blue-500" />
-          <span className="text-sm">{discussion.comments}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <FaShare className="text-green-500" />
-          <span className="text-sm">{discussion.shares}</span>
-        </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
-      <div className="flex gap-2 pt-4 border-t border-gray-100">
-        <button
-          onClick={() => handleView(discussion)}
-          className="flex items-center justify-center px-4 py-2 bg-[#00A99D] text-white rounded-lg gap-2 hover:bg-[#008F84] transition-all font-medium flex-1"
-        >
-          <FaEye className="text-sm" />
-          <span>View</span>
-        </button>
+      <div className="flex w-full items-center justify-between pt-4 border-t border-gray-100">
+        <div clas sName="flex items-center gap-3">
+          <div className=" flex items-center gap-5">
+            <button className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors">
+              <FaHeart className="text-lg" />
+              <span className="text-sm font-medium">{discussion.upvotes}</span>
+            </button>
+            <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
+              <FaComment className="text-lg" />
+              <span className="text-sm font-medium">{discussion.comments}</span>
+            </button>
+            <button className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors">
+              <FaShare className="text-lg" />
+              <span className="text-sm font-medium">{discussion.shares}</span>
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleView(discussion)}
+            className="flex items-center gap-2 text-gray-600 hover:text-[#00A99D] transition-colors"
+          >
+            <FaEye className="text-lg" />
+            {/* <span className="text-sm text-gray-500">
+              • {discussion.upvotes}
+            </span> */}
+          </button>
 
-        <button
-          onClick={() => handleEdit(discussion)}
-          className="flex items-center justify-center px-4 py-2 border-2 border-[#00A99D] rounded-lg gap-2 text-[#00A99D] hover:bg-[#00A99D] hover:text-white transition-all font-medium flex-1"
-        >
-          <FaEdit className="text-sm" />
-          <span>Edit</span>
-        </button>
-
-        <button
-          onClick={() => handleDeleteClick(discussion)}
-          className="flex items-center justify-center px-4 py-2 border-2 border-red-500 rounded-lg gap-2 text-red-500 hover:bg-red-500 hover:text-white transition-all font-medium flex-1"
-        >
-          <FaTrash className="text-sm" />
-          <span>Delete</span>
-        </button>
+          <button
+            onClick={() => handleEdit(discussion)}
+            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+          >
+            <MdEdit className="text-lg" />
+            {/* <span className="text-sm font-medium">{discussion.comments}</span> */}
+          </button>
+          <button
+            onClick={() => handleDeleteClick(discussion)}
+            className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors"
+          >
+            <FaTrashCan className="text-lg text-red-600" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { IoLocationOutline } from "react-icons/io5";
 import { FiPhone } from "react-icons/fi";
-import { fetchPalliativeUnits } from "../../../api/PalliativeUnit";
+import { fetchPalliativeUnits } from "../../api/PalliativeUnit";
 
 const PalliativeGrid = () => {
   const [palliativeUnits, setPalliativeUnits] = useState([]);

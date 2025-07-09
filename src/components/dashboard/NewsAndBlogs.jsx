@@ -30,6 +30,7 @@ import {
   getBlogsByCategory,
 } from "../../api/blogsdashboard";
 import { usePathname } from "next/navigation"; // Add this import
+import Sidebar from "../Sidebar";
 const NewsAndBlogs = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [showLocationMenu, setShowLocationMenu] = useState(false);
@@ -430,65 +431,10 @@ const NewsAndBlogs = () => {
         </div>
       </div>
       {/* Sidebar */}
-      <div
-        className={`w-64 border-r border-gray-200 fixed h-screen overflow-y-auto bg-white z-30 transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:block`}
-      >
-        <div className="p-5">
-          <Image
-            alt="GPDN Logo"
-            src={logo}
-            width={100}
-            className="h-auto hidden md:block"
-          />
-        </div>
-
-        <nav className="mt-5 pb-20">
-          {sidebarMenus.map((item, index) => {
-            // Check if current path matches menu link (exact or subpath)
-            const isActive =
-              pathname === item.link ||
-              (item.link !== "/" && pathname.startsWith(item.link + "/"));
-
-            return (
-              <Link key={index} href={item.link} className="block">
-                <div
-                  className={`flex items-center gap-5 px-5 py-3 cursor-pointer duration-300
-              ${
-                isActive
-                  ? "bg-[#00A99D] text-white"
-                  : "hover:bg-[#00A99D] hover:text-white text-gray-700"
-              }
-            `}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="font-medium">{item.menu}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Professional Logout Button */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
-          <button
-            onClick={() => {
-              localStorage.removeItem("userFullName");
-              localStorage.removeItem("userId");
-              
-
-              console.log("User logged out successfully");
-            }}
-            className="flex items-center gap-5 px-5 py-4 w-full text-left cursor-pointer 
-                 duration-300 text-gray-700 hover:bg-red-50 hover:text-red-600
-                 transition-colors group"
-          >
-            <LogOut className="text-xl w-5 h-5 group-hover:text-red-600" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </div>
+      <Sidebar
+        mobileMenuOpen={mobileMenuOpen}
+        handleMobileMenuToggle={handleMobileMenuToggle}
+      />
 
       {/* Main Content */}
       <div className="grid md:flex-1 md:ml-64 mt-16 md:mt-0">

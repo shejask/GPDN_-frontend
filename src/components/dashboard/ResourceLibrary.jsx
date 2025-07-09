@@ -15,9 +15,14 @@ import { FaFileAlt, FaImage } from "react-icons/fa";
 import azeem from "../../app/assets/registation/Frame.png";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchResources, fetchResourceTags, fetchResourcesByTag } from "../../api/resource";
+import {
+  fetchResources,
+  fetchResourceTags,
+  fetchResourcesByTag,
+} from "../../api/resource";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
+import Sidebar from "../Sidebar";
 
 // Constants
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
@@ -52,21 +57,25 @@ const ResourceLibrary = () => {
   const [tagsLoading, setTagsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Fetch tags from API
   useEffect(() => {
     const fetchTags = async () => {
       try {
         setTagsLoading(true);
         const response = await fetchResourceTags();
-        
+
         if (response.success && response.data && response.data.data) {
           const tagsData = response.data.data;
-          
+
           // Process the tags data based on the API response format
-          const processedTags = tagsData.flatMap(tag => {
+          const processedTags = tagsData.flatMap((tag) => {
             // Check if the tag is a JSON string array
-            if (typeof tag === 'string' && tag.trim().startsWith('[') && tag.trim().endsWith(']')) {
+            if (
+              typeof tag === "string" &&
+              tag.trim().startsWith("[") &&
+              tag.trim().endsWith("]")
+            ) {
               try {
                 // Parse the JSON string and return the array items
                 const parsedTags = JSON.parse(tag.trim());
@@ -79,22 +88,25 @@ const ResourceLibrary = () => {
             // Return the tag as is
             return [tag];
           });
-          
+
           setTags(processedTags);
         } else {
-          console.error('Failed to fetch tags or invalid response format:', response);
+          console.error(
+            "Failed to fetch tags or invalid response format:",
+            response
+          );
           // Set default tags as fallback
           setDefaultTags();
         }
       } catch (error) {
-        console.error('Error fetching tags:', error);
+        console.error("Error fetching tags:", error);
         // Set default tags as fallback
         setDefaultTags();
       } finally {
         setTagsLoading(false);
       }
     };
-    
+
     // Fallback function to set default tags if API fails
     const setDefaultTags = () => {
       setTags([
@@ -110,7 +122,7 @@ const ResourceLibrary = () => {
         "Pediatric Palliative Care",
       ]);
     };
-    
+
     fetchTags();
   }, []);
 
@@ -195,28 +207,28 @@ const ResourceLibrary = () => {
   );
 
   // Event handlers
-  const handleImageError = useCallback((resourceId) => {
+  const handleImageError = useCallback((fileId) => {
     setImageErrors((prev) => ({
       ...prev,
-      [resourceId]: true,
+      [fileId]: true,
     }));
     setImageLoadingStates((prev) => ({
       ...prev,
-      [resourceId]: false,
-    }));
-  }, []);
-
-  const handleImageLoad = useCallback((resourceId) => {
-    setImageLoadingStates((prev) => ({
-      ...prev,
-      [resourceId]: false,
+      [fileId]: false,
     }));
   }, []);
 
-  const handleImageLoadStart = useCallback((resourceId) => {
+  const handleImageLoad = useCallback((fileId) => {
     setImageLoadingStates((prev) => ({
       ...prev,
-      [resourceId]: true,
+      [fileId]: false,
+    }));
+  }, []);
+
+  const handleImageLoadStart = useCallback((fileId) => {
+    setImageLoadingStates((prev) => ({
+      ...prev,
+      [fileId]: true,
     }));
   }, []);
 
@@ -228,20 +240,76 @@ const ResourceLibrary = () => {
       }
 
       try {
+        // If multiple files, download them one by one
+        if (files.length > 1) {
+          message.info(`Downloading ${files.length} files...`);
+
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const isFullUrl =
+              file.startsWith("http") || file.startsWith("https");
+            const fileURL = isFullUrl ? file : getImageUrl(file);
+
+            if (!fileURL) {
+              console.error("Invalid file URL for:", file);
+              continue;
+            }
+
+            const originalFilename =
+              file.split("/").pop() ||
+              file.split("\\").pop() ||
+              `file-${i + 1}`;
+            const fileExtension = getFileExtension(file) || "file";
+            const filename = originalFilename.includes(".")
+              ? originalFilename
+              : `${title || originalFilename}-${i + 1}.${fileExtension}`;
+
+            try {
+              const response = await fetch(fileURL);
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = filename;
+              a.style.display = "none";
+
+              document.body.appendChild(a);
+              a.click();
+
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+              }, 100);
+
+              // Small delay between downloads
+              if (i < files.length - 1) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
+              }
+            } catch (error) {
+              console.error(`Error downloading file ${i + 1}:`, error);
+              // Try opening in new tab as fallback
+              window.open(fileURL, "_blank");
+            }
+          }
+
+          message.success(`All ${files.length} files downloaded successfully`);
+          return;
+        }
+
+        // Single file download (existing logic)
         const filePath = files[0];
-        // Determine if the file path is already a full URL
         const isFullUrl =
           filePath.startsWith("http") || filePath.startsWith("https");
-        // Get the file URL - either use directly or construct it
         const fileURL = isFullUrl ? filePath : getImageUrl(filePath);
 
         if (!fileURL) {
           throw new Error("Invalid file URL");
         }
 
-        console.log("Attempting to download from:", fileURL);
-
-        // Extract filename from the file path for better naming
         const originalFilename =
           filePath.split("/").pop() || filePath.split("\\").pop() || "download";
         const fileExtension = getFileExtension(filePath) || "file";
@@ -249,20 +317,8 @@ const ResourceLibrary = () => {
           ? originalFilename
           : `${title || originalFilename}.${fileExtension}`;
 
-        // Method 1: Direct download using Blob
         try {
-          // Use 'cors' mode for same-origin requests, but don't specify mode for cross-origin
-          // This lets the browser handle CORS properly
-          const fetchOptions = {
-            method: "GET",
-            headers: {
-              Accept: "*/*",
-              "Cache-Control": "no-cache",
-            },
-          };
-
-          const response = await fetch(fileURL, fetchOptions);
-
+          const response = await fetch(fileURL);
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -277,55 +333,42 @@ const ResourceLibrary = () => {
           document.body.appendChild(a);
           a.click();
 
-          // Cleanup
           setTimeout(() => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
           }, 100);
 
           message.success("File downloaded successfully");
-          return; // Exit if successful
         } catch (fetchError) {
           console.log(
             "Blob download failed, trying alternative method:",
             fetchError
           );
+
+          // Fallback methods
+          try {
+            const a = document.createElement("a");
+            a.href = fileURL;
+            a.download = filename;
+            a.rel = "noopener noreferrer";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+              document.body.removeChild(a);
+            }, 100);
+
+            message.success("Download initiated");
+          } catch (linkError) {
+            console.error("Link download failed:", linkError);
+            window.open(fileURL, "_blank");
+            message.success("Opening file in new tab");
+          }
         }
-
-        // Method 2: Direct link with download attribute
-        try {
-          const a = document.createElement("a");
-          a.href = fileURL;
-          a.download = filename;
-          a.rel = "noopener noreferrer";
-          a.style.display = "none";
-          document.body.appendChild(a);
-          a.click();
-
-          // Cleanup
-          setTimeout(() => {
-            document.body.removeChild(a);
-          }, 100);
-
-          message.success("Download initiated");
-          return; // Exit if successful
-        } catch (linkError) {
-          console.error("Link download failed:", linkError);
-        }
-
-        // Method 3: Open in new tab as last resort
-        window.open(fileURL, "_blank");
-        message.success("Opening file in new tab");
       } catch (error) {
         console.error("Error downloading file:", error);
         message.error("Failed to download the file. Please try again later.");
-
-        // Show more detailed error to help with debugging
-        console.log("Download error details:", {
-          error: error.message,
-          files,
-          title,
-        });
       }
     },
     [getImageUrl, getFileExtension]
@@ -338,16 +381,16 @@ const ResourceLibrary = () => {
   const handleCategoryFilter = useCallback((category) => {
     setSelectedCategory((prev) => (prev === category ? "" : category));
   }, []);
-  
+
   // Handle tag click to fetch resources by tag
   const handleTagClick = useCallback(async (tag) => {
     try {
       setLoading(true);
       const response = await fetchResourcesByTag(tag);
-      
+
       if (response.success && response.data) {
         let resourcesArray = [];
-        
+
         // Extract resources array from various possible response structures
         if (response.data.data && Array.isArray(response.data.data)) {
           resourcesArray = response.data.data;
@@ -356,17 +399,22 @@ const ResourceLibrary = () => {
         } else if (Array.isArray(response)) {
           resourcesArray = response;
         }
-        
+
         // Filter approved resources
         const approvedResources = resourcesArray.filter(
           (resource) =>
             resource &&
             (resource.approvalStatus === true ||
-             resource.registrationStatus === "approved" ||
-             resource.status === "approved")
+              resource.registrationStatus === "approved" ||
+              resource.status === "approved")
         );
-        
-        console.log("Filtered approved resources by tag:", approvedResources.length, "out of", resourcesArray.length);
+
+        console.log(
+          "Filtered approved resources by tag:",
+          approvedResources.length,
+          "out of",
+          resourcesArray.length
+        );
         setResources(approvedResources || []);
         message.success(`Showing resources for tag: ${tag}`);
       } else {
@@ -447,23 +495,33 @@ const ResourceLibrary = () => {
           .includes(searchTerm.toLowerCase());
 
       // Check if the selected category matches any of the resource's tags
-      let matchesCategory = !selectedCategory || 
-                           resource.category?.toLowerCase() === selectedCategory.toLowerCase();
-      
+      let matchesCategory =
+        !selectedCategory ||
+        resource.category?.toLowerCase() === selectedCategory.toLowerCase();
+
       // Also check tags if we have them
-      if (!matchesCategory && selectedCategory && resource.tags && resource.tags.length > 0) {
-        matchesCategory = resource.tags.some(tag => {
+      if (
+        !matchesCategory &&
+        selectedCategory &&
+        resource.tags &&
+        resource.tags.length > 0
+      ) {
+        matchesCategory = resource.tags.some((tag) => {
           // Handle case where tag is a JSON string array
-          if (typeof tag === 'string' && 
-             (tag.trim().startsWith('[') || tag.trim().startsWith(' [')) && 
-              tag.trim().endsWith(']')) {
+          if (
+            typeof tag === "string" &&
+            (tag.trim().startsWith("[") || tag.trim().startsWith(" [")) &&
+            tag.trim().endsWith("]")
+          ) {
             try {
               // Remove leading space if present
-              const cleanTag = tag.trim().startsWith(' [') ? tag.trim().substring(1) : tag.trim();
+              const cleanTag = tag.trim().startsWith(" [")
+                ? tag.trim().substring(1)
+                : tag.trim();
               const parsedTags = JSON.parse(cleanTag);
               if (Array.isArray(parsedTags)) {
-                return parsedTags.some(t => 
-                  t.toLowerCase() === selectedCategory.toLowerCase()
+                return parsedTags.some(
+                  (t) => t.toLowerCase() === selectedCategory.toLowerCase()
                 );
               }
             } catch (e) {
@@ -472,14 +530,104 @@ const ResourceLibrary = () => {
             }
           }
           // Check regular tag
-          return typeof tag === 'string' && 
-                 tag.toLowerCase() === selectedCategory.toLowerCase();
+          return (
+            typeof tag === "string" &&
+            tag.toLowerCase() === selectedCategory.toLowerCase()
+          );
         });
       }
 
       return matchesSearch && matchesCategory;
     });
   }, [resources, searchTerm, selectedCategory]);
+
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  // Add this new function after the existing utility functions (around line 200)
+  const handleImageView = useCallback((imageUrl, title, index) => {
+    setSelectedImage({
+      url: imageUrl,
+      title: title,
+      index: index,
+    });
+    setImageModalOpen(true);
+  }, []);
+
+  // Add this new function after handleImageView
+  const handleSingleImageDownload = useCallback(
+    async (filePath, title, index) => {
+      try {
+        const isFullUrl =
+          filePath.startsWith("http") || filePath.startsWith("https");
+        const fileURL = isFullUrl ? filePath : getImageUrl(filePath);
+
+        if (!fileURL) {
+          throw new Error("Invalid file URL");
+        }
+
+        const originalFilename =
+          filePath.split("/").pop() || filePath.split("\\").pop() || "download";
+        const fileExtension = getFileExtension(filePath) || "file";
+        const filename = originalFilename.includes(".")
+          ? originalFilename
+          : `${title || originalFilename}-${index + 1}.${fileExtension}`;
+
+        const response = await fetch(fileURL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 100);
+
+        message.success("Image downloaded successfully");
+      } catch (error) {
+        console.error("Error downloading image:", error);
+        message.error("Failed to download the image. Please try again later.");
+      }
+    },
+    [getImageUrl, getFileExtension]
+  );
+
+  // Add this new component after the utility functions (around line 300)
+  const ImageModal = ({ isOpen, onClose, image }) => {
+    if (!isOpen || !image) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+        <div className="relative max-w-4xl max-h-[90vh] mx-4">
+          <button
+            onClick={onClose}
+            className="absolute -top-12 right-0 text-white text-2xl hover:text-gray-300 transition-colors"
+          >
+            <MdClose />
+          </button>
+          <img
+            src={image.url}
+            alt={image.title}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 rounded-b-lg">
+            <p className="text-white text-sm font-medium">{image.title}</p>
+            <p className="text-gray-300 text-xs">Image {image.index + 1}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Render functions
   const renderSidebar = () => (
@@ -539,13 +687,13 @@ const ResourceLibrary = () => {
           Resource Library
         </h1>
         {/* Reset button to show all resources */}
-        <button
+        {/* <button
           onClick={loadResources}
           className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center gap-1"
           title="Reset filters and show all resources"
         >
           <MdClose className="text-sm" /> Reset
-        </button>
+        </button> */}
       </div>
       <div className="mt-1 md:mt-0 flex gap-3 items-center">
         <Input
@@ -575,101 +723,244 @@ const ResourceLibrary = () => {
   const renderFilePreview = (resource) => {
     if (!resource.files || !resource.files.length) return null;
 
-    const file = resource.files[0];
-    const isImage = isImageFile(file);
-    const imageUrl = getImageUrl(file);
-    const hasImageError = imageErrors[resource._id];
-    const isImageLoading = imageLoadingStates[resource._id];
-
-    console.log("Rendering file preview:", {
-      file,
-      imageUrl,
-      isImage,
-      hasImageError,
-    });
+    const imageFiles = resource.files.filter((file) => isImageFile(file));
+    const documentFiles = resource.files.filter((file) => !isImageFile(file));
 
     return (
       <div className="mt-4 border-t pt-4">
-        {isImage && !hasImageError ? (
-          <div className="mb-4 relative">
-            {isImageLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
-                <Spin size="large" />
-              </div>
-            )}
-            <div className="border rounded-lg overflow-hidden bg-gray-50">
-              <img
-                src={imageUrl}
-                alt={resource.title}
-                className="max-w-full rounded-lg shadow-sm"
-                onError={(e) => {
-                  console.error("Image failed to load:", imageUrl, e);
-                  handleImageError(resource._id);
-                }}
-                onLoad={(e) => {
-                  console.log("Image loaded successfully:", imageUrl);
-                  handleImageLoad(resource._id);
-                }}
-                onLoadStart={() => handleImageLoadStart(resource._id)}
-                style={{
-                  maxHeight: "250px", // Reduced from 400px to 300px
-                  objectFit: "contain",
-                  width: "100%",
-                  display: isImageLoading ? "none" : "block",
-                }}
-              />
-            </div>
-            {hasImageError && (
-              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-center gap-2 text-yellow-700">
-                  <FaImage />
-                  <span className="text-sm">Image preview not available</span>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mb-4 border">
-            <div className="text-2xl">{getFileIcon(file)}</div>
-            <div className="flex-1">
-              <div className="font-medium text-gray-800 break-all">
-                {file.split("/").pop() ||
-                  file.split("\\").pop() ||
-                  "Unknown file"}
-              </div>
-              <div className="text-sm text-gray-500">
-                {getFileExtension(file).toUpperCase()} File
-                {hasImageError && isImage && (
-                  <span className="text-red-500 ml-2">
-                    (Image preview failed)
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-gray-400 mt-1 break-all">
-                Path: {file}
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <FaFileAlt className="text-gray-500" />
+            Files ({resource.files.length})
+          </h4>
 
-        <div className=" md:flex md:gap-2   ">
-          <button
-            onClick={() => handleDownload(resource.files, resource.title)}
-            className="w-full  flex items-center justify-center px-4 py-2 border-2 border-[#00A99D] rounded-lg gap-2 text-[#00A99D] hover:bg-[#00A99D] hover:text-white transition-all font-medium"
-          >
-            <FaImage className="text-xs md:text-sm" />
-            <span>Download</span>
-          </button>
+          {/* Image Gallery */}
+          {imageFiles.length > 0 && (
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
+                <FaImage className="text-blue-500" />
+                Images ({imageFiles.length})
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {imageFiles.map((file, index) => {
+                  const imageUrl = getImageUrl(file);
+                  const hasImageError = imageErrors[`${resource._id}-${index}`];
+                  const isImageLoading =
+                    imageLoadingStates[`${resource._id}-${index}`];
 
-          {isImage && (
-            <button
-              onClick={() => window.open(imageUrl, "_blank")}
-              className="flex mt-2 w-full items-center justify-center px-4 py-2 border border-gray-300 rounded-lg gap-2 text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <FaImage className="text-xs md:text-sm" />
-              <span>View Full Size</span>
-            </button>
+                  return (
+                    <div key={index} className="relative group">
+                      {isImageLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
+                          <Spin size="small" />
+                        </div>
+                      )}
+
+                      {!hasImageError ? (
+                        <div className="border rounded-lg overflow-hidden bg-gray-50 hover:shadow-lg transition-all duration-300">
+                          <div className="relative">
+                            <img
+                              src={imageUrl}
+                              alt={`${resource.title} - Image ${index + 1}`}
+                              className="w-full h-40 object-cover"
+                              onError={(e) => {
+                                console.error(
+                                  "Image failed to load:",
+                                  imageUrl,
+                                  e
+                                );
+                                handleImageError(`${resource._id}-${index}`);
+                              }}
+                              onLoad={() =>
+                                handleImageLoad(`${resource._id}-${index}`)
+                              }
+                              onLoadStart={() =>
+                                handleImageLoadStart(`${resource._id}-${index}`)
+                              }
+                              style={{
+                                display: isImageLoading ? "none" : "block",
+                              }}
+                            />
+
+                            {/* Action buttons overlay */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() =>
+                                    handleImageView(
+                                      imageUrl,
+                                      resource.title,
+                                      index
+                                    )
+                                  }
+                                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-lg hover:bg-gray-100 transition-colors shadow-md"
+                                  title="View full size"
+                                >
+                                  <FaImage className="text-sm" />
+                                  <span className="text-sm font-medium">
+                                    View
+                                  </span>
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleSingleImageDownload(
+                                      file,
+                                      resource.title,
+                                      index
+                                    )
+                                  }
+                                  className="flex items-center gap-2 px-4 py-2 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors shadow-md"
+                                  title="Download image"
+                                >
+                                  <IoDownloadOutline className="text-sm" />
+                                  <span className="text-sm font-medium">
+                                    Download
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Image info */}
+                          <div className="p-3 bg-white">
+                            <p className="text-xs text-gray-600 truncate">
+                              {file.split("/").pop() || `Image ${index + 1}`}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {getFileExtension(file).toUpperCase()} Image
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border rounded-lg p-6 bg-gray-50 text-center h-40 flex flex-col items-center justify-center">
+                          <FaImage className="text-gray-400 text-3xl mb-2" />
+                          <p className="text-sm text-gray-500 mb-2">
+                            Preview unavailable
+                          </p>
+                          <button
+                            onClick={() =>
+                              handleSingleImageDownload(
+                                file,
+                                resource.title,
+                                index
+                              )
+                            }
+                            className="flex items-center gap-2 px-3 py-1 bg-[#00A99D] text-white rounded text-xs hover:bg-[#008F84] transition-colors"
+                          >
+                            <IoDownloadOutline className="text-xs" />
+                            Download
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
+
+          {/* Document Files */}
+          {documentFiles.length > 0 && (
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
+                <FaFileAlt className="text-green-500" />
+                Documents ({documentFiles.length})
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {documentFiles.map((file, index) => {
+                  const fileExtension = getFileExtension(file);
+                  const fileName =
+                    file.split("/").pop() ||
+                    file.split("\\").pop() ||
+                    `Document ${index + 1}`;
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-sm">
+                          {getFileIcon(file)}
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-800 truncate mb-1">
+                          {fileName}
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          {fileExtension.toUpperCase()} Document
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              handleDownload(
+                                [file],
+                                `${resource.title}-${index + 1}`
+                              )
+                            }
+                            className="flex items-center gap-1 px-3 py-1 text-xs bg-[#00A99D] text-white rounded hover:bg-[#008F84] transition-colors"
+                          >
+                            <IoDownloadOutline className="text-xs" />
+                            Download
+                          </button>
+                          {(fileExtension === "pdf" ||
+                            fileExtension === "doc" ||
+                            fileExtension === "docx") && (
+                            <button
+                              onClick={() =>
+                                window.open(getImageUrl(file), "_blank")
+                              }
+                              className="flex items-center gap-1 px-3 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors"
+                            >
+                              <FaFileAlt className="text-xs" />
+                              View
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Actions */}
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => handleDownload(resource.files, resource.title)}
+              className="flex items-center justify-center px-4 py-2 bg-[#00A99D] text-white rounded-lg gap-2 hover:bg-[#008F84] transition-all font-medium shadow-sm"
+            >
+              <IoDownloadOutline className="text-sm" />
+              <span>Download All Files</span>
+            </button>
+
+            {imageFiles.length > 0 && (
+              <button
+                onClick={() =>
+                  handleDownload(imageFiles, `${resource.title}-images`)
+                }
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-600 rounded-lg gap-2 hover:bg-gray-50 transition-colors"
+              >
+                <FaImage className="text-sm" />
+                <span>Download All Images</span>
+              </button>
+            )}
+
+            {documentFiles.length > 0 && (
+              <button
+                onClick={() =>
+                  handleDownload(documentFiles, `${resource.title}-documents`)
+                }
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-600 rounded-lg gap-2 hover:bg-gray-50 transition-colors"
+              >
+                <FaFileAlt className="text-sm" />
+                <span>Download All Documents</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -678,38 +969,38 @@ const ResourceLibrary = () => {
   const renderResourceCard = (resource) => (
     <div
       key={resource._id}
-      className="p-6 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow bg-white"
+      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
     >
-      {/* Author Info */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-[#00A99D] to-[#008F84] rounded-full overflow-hidden flex items-center justify-center">
+      {/* Header with author info */}
+      <div className="flex items-center gap-3 p-4 border-b border-gray-100">
+        <div className="w-10 h-10 bg-gradient-to-br from-[#00A99D] to-[#008F84] rounded-full overflow-hidden flex items-center justify-center">
           {resource.authorId?.imageURL ? (
             <img
               src={resource.authorId.imageURL}
               alt={resource.authorId?.fullName || "Author"}
-              width={48}
-              height={48}
+              width={40}
+              height={40}
               className="rounded-full w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = azeem.src; // Fallback to default image
+                e.target.src = azeem.src;
               }}
             />
           ) : (
             <Image
               src={azeem}
               alt="Author"
-              width={48}
-              height={48}
+              width={40}
+              height={40}
               className="rounded-full"
             />
           )}
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-800">
+        <div className="flex-1">
+          <h3 className="font-medium text-gray-900 text-sm">
             {resource.authorId?.fullName || "Anonymous"}
           </h3>
-          <span className="text-sm text-gray-500">
+          <span className="text-xs text-gray-500">
             {new Date(resource.createdAt).toLocaleDateString("en-US", {
               year: "numeric",
               month: "short",
@@ -722,209 +1013,293 @@ const ResourceLibrary = () => {
       </div>
 
       {/* Content */}
-      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">
-        {resource.title}
-      </h3>
-      <p className="text-gray-600 mb-4 leading-relaxed">
-        {resource.description}
-      </p>
-
-      {/* HTML Content */}
-      {resource.content && (
-        <div className="mt-4 mb-4 prose max-w-none">
-          <div
-            className="text-gray-800 leading-relaxed overflow-auto"
-            dangerouslySetInnerHTML={{ __html: resource.content }}
-          />
+      <div className="p-4">
+        <div className=" flex flex-col mb-5">
+          <p className="text-gray-700 font-semibold text-lg leading-relaxed ">
+            {resource.title}
+          </p>
+          <p className="text-gray-700 text-sm leading-relaxed ">
+            {resource.description}
+          </p>
         </div>
-      )}
 
-      {/* Category Tag */}
-      {resource.category && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="px-4 py-2 bg-gradient-to-r from-[#E3F5FE] to-[#F0FFFE] text-[#00A99D] rounded-full text-sm font-medium border border-[#00A99D]/20">
-            {resource.category}
-          </span>
-        </div>
-      )}
-      
-      {/* Tags */}
-      {resource.tags && resource.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {resource.tags.map((tag, index) => {
-            // Handle case where tag is a JSON string array
-            let processedTags = [tag];
-            if (typeof tag === 'string' && tag.trim().startsWith('[') && tag.trim().endsWith(']')) {
-              try {
-                const parsedTags = JSON.parse(tag.trim());
-                if (Array.isArray(parsedTags)) {
-                  processedTags = parsedTags;
+        {/* HTML Content */}
+        {resource.content && (
+          <div className="mb-3 prose max-w-none bg-slate-50 p-4 rounded-2xl">
+            <div
+              className="text-gray-700 text-sm  font-light leading-relaxed overflow-auto"
+              dangerouslySetInnerHTML={{ __html: resource.content }}
+            />
+          </div>
+        )}
+
+        {/* Tags */}
+        {resource.tags && resource.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {resource.tags.map((tag, index) => {
+              let processedTags = [tag];
+              if (
+                typeof tag === "string" &&
+                tag.trim().startsWith("[") &&
+                tag.trim().endsWith("]")
+              ) {
+                try {
+                  const parsedTags = JSON.parse(tag.trim());
+                  if (Array.isArray(parsedTags)) {
+                    processedTags = parsedTags;
+                  }
+                } catch (e) {
+                  processedTags = [tag.trim()];
                 }
-              } catch (e) {
-                // If parsing fails, use original tag
-                processedTags = [tag.trim()];
-              }
-            } else if (typeof tag === 'string' && tag.trim().startsWith(' [') && tag.trim().endsWith(']')) {
-              // Handle case with leading space
-              try {
-                const parsedTags = JSON.parse(tag.trim().substring(1));
-                if (Array.isArray(parsedTags)) {
-                  processedTags = parsedTags;
+              } else if (
+                typeof tag === "string" &&
+                tag.trim().startsWith(" [") &&
+                tag.trim().endsWith("]")
+              ) {
+                try {
+                  const parsedTags = JSON.parse(tag.trim().substring(1));
+                  if (Array.isArray(parsedTags)) {
+                    processedTags = parsedTags;
+                  }
+                } catch (e) {
+                  processedTags = [tag.trim()];
                 }
-              } catch (e) {
-                // If parsing fails, use original tag
-                processedTags = [tag.trim()];
               }
-            }
-            
-            return processedTags.map((processedTag, tagIndex) => (
-              <span 
-                key={`${index}-${tagIndex}`} 
-                className="px-3 py-1 bg-gradient-to-r from-[#F0F9FF] to-[#F5FFFD] text-[#00A99D] rounded-full text-xs font-medium border border-[#00A99D]/10 cursor-pointer hover:bg-[#E3F5FE] transition-colors"
-                onClick={() => handleTagClick(processedTag)}
-                title={`Show resources with tag: ${processedTag}`}
-              >
-                {processedTag}
-              </span>
-            ));
-          })}
-        </div>
-      )}
 
-      {/* File Preview/Download Section */}
-      {renderFilePreview(resource)}
+              return processedTags.map((processedTag, tagIndex) => (
+                <span
+                  key={`${index}-${tagIndex}`}
+                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium cursor-pointer hover:bg-blue-200 transition-colors"
+                  onClick={() => handleTagClick(processedTag)}
+                  title={`Show resources with tag: ${processedTag}`}
+                >
+                  {processedTag}
+                </span>
+              ));
+            })}
+          </div>
+        )}
+
+        {/* File Preview/Download Section */}
+        {resource.files && resource.files.length > 0 && (
+          <div className="space-y-3">
+            {/* Images */}
+            {resource.files.filter((file) => isImageFile(file)).length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {resource.files
+                  .filter((file) => isImageFile(file))
+                  .map((file, index) => {
+                    const imageUrl = getImageUrl(file);
+                    const hasImageError =
+                      imageErrors[`${resource._id}-${index}`];
+                    const isImageLoading =
+                      imageLoadingStates[`${resource._id}-${index}`];
+
+                    return (
+                      <div key={index} className="relative group">
+                        {isImageLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
+                            <Spin size="small" />
+                          </div>
+                        )}
+
+                        {!hasImageError ? (
+                          <div className="relative overflow-hidden rounded-lg">
+                            <img
+                              src={imageUrl}
+                              alt={`${resource.title} - Image ${index + 1}`}
+                              className="w-full h-52 object-cover"
+                              onError={(e) => {
+                                console.error(
+                                  "Image failed to load:",
+                                  imageUrl,
+                                  e
+                                );
+                                handleImageError(`${resource._id}-${index}`);
+                              }}
+                              onLoad={() =>
+                                handleImageLoad(`${resource._id}-${index}`)
+                              }
+                              onLoadStart={() =>
+                                handleImageLoadStart(`${resource._id}-${index}`)
+                              }
+                              style={{
+                                display: isImageLoading ? "none" : "block",
+                              }}
+                            />
+
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() =>
+                                    handleImageView(
+                                      imageUrl,
+                                      resource.title,
+                                      index
+                                    )
+                                  }
+                                  className="p-2 bg-white text-gray-800 rounded-full hover:bg-gray-100 transition-colors shadow-md"
+                                  title="View full size"
+                                >
+                                  <FaImage className="text-sm" />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleSingleImageDownload(
+                                      file,
+                                      resource.title,
+                                      index
+                                    )
+                                  }
+                                  className="p-2 bg-[#00A99D] text-white rounded-full hover:bg-[#008F84] transition-colors shadow-md"
+                                  title="Download image"
+                                >
+                                  <IoDownloadOutline className="text-sm" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <FaImage className="text-gray-400 text-xl" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Documents */}
+            {resource.files.filter((file) => !isImageFile(file)).length > 0 && (
+              <div className="space-y-2">
+                {resource.files
+                  .filter((file) => !isImageFile(file))
+                  .slice(0, 1)
+                  .map((file, index) => {
+                    const fileName =
+                      file.split("/").pop() ||
+                      file.split("\\").pop() ||
+                      `Document ${index + 1}`;
+                    const fileExtension = getFileExtension(file);
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+                          {getFileIcon(file)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {fileName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {fileExtension.toUpperCase()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() =>
+                            handleDownload(
+                              [file],
+                              `${resource.title}-${index + 1}`
+                            )
+                          }
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <IoDownloadOutline className="text-lg" />
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Video placeholder - if you have video files */}
+            {resource.files.some((file) =>
+              ["mp4", "webm", "ogg"].includes(getFileExtension(file))
+            ) && (
+              <div className="relative">
+                <div className="w-full h-40 bg-gray-900 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Download button */}
+        {resource.files && resource.files.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <button
+              onClick={() => handleDownload(resource.files, resource.title)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+            >
+              <IoDownloadOutline className="text-lg" />
+              <span>Download</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderCategories = () => (
-    <div className="w-80 bg-white p-6 fixed right-0 h-screen overflow-y-auto border-l border-gray-200">
-      <h2 className="text-xl font-bold mb-6 text-gray-800">
-        Filter by Category
-      </h2>
-      <div className="space-y-2">
-        <button
-          onClick={() => handleCategoryFilter("")}
-          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-            !selectedCategory
-              ? "bg-[#00A99D] text-white"
-              : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-          }`}
-        >
-          All Categories
-        </button>
-        {tagsLoading ? (
-          <div className="flex justify-center py-4">
-            <Spin size="small" />
-          </div>
-        ) : tags.map((tag) => (
-          <button
-            key={tag}
-            onClick={() => handleCategoryFilter(tag)}
-            className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
-              selectedCategory === tag
-                ? "bg-[#00A99D] text-white"
-                : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            {tag}
-          </button>
-        ))}
+    <div className="w-64 bg-white fixed right-0 h-screen overflow-y-auto border-l border-gray-200 pt-0 mt-5">
+      <div className="p-6">
+        <h2 className="text-2xl font-semibold mb-8 text-gray-900 border-b border-gray-200 pb-4">
+          Categories
+        </h2>
+        <div className="space-y-3">
+          {tagsLoading ? (
+            <div className="flex justify-center py-4">
+              <Spin size="small" />
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {tags.map((tag, index) => (
+                <button
+                  key={`${tag}-${index}`}
+                  onClick={() => handleCategoryFilter(tag)}
+                  className={` text-left px-4 py-1 rounded-full text-sm font-medium transition-all duration-200 border ${
+                    selectedCategory === tag
+                      ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                      : "text-gray-700 hover:bg-gray-50 border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <div className="flex md:hidden w-full h-16 bg-[#00A99D] fixed top-0 z-30 px-5 items-center justify-between">
-        <Image alt="GPDN Logo" src={logo} width={100} className="h-auto" />
-
-        {/* Animated Menu/Close Button */}
-        <div
-          onClick={handleMobileMenuToggle}
-          className="text-2xl text-white cursor-pointer p-2 rounded-md hover:bg-white hover:bg-opacity-20 transition-all duration-200 relative"
-        >
-          {/* Menu Icon */}
-          <MdMenu
-            className={`absolute inset-0 transition-all duration-300 ${
-              mobileMenuOpen
-                ? "rotate-180 opacity-0 scale-75"
-                : "rotate-0 opacity-100 scale-100"
-            }`}
-          />
-
-          {/* Close Icon */}
-          <MdClose
-            className={`absolute inset-0 transition-all duration-300 ${
-              mobileMenuOpen
-                ? "rotate-0 opacity-100 scale-100"
-                : "rotate-180 opacity-0 scale-75"
-            }`}
-          />
-        </div>
-      </div>
-      {/* Sidebar */}
-      <div
-        className={`w-64 border-r border-gray-200 fixed h-screen overflow-y-auto bg-white z-30 transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:block`}
-      >
-        <div className="p-5">
-          <Image
-            alt="GPDN Logo"
-            src={logo}
-            width={100}
-            className="h-auto hidden md:block"
-          />
-        </div>
-
-        <nav className="mt-5">
-          {SIDEBAR_MENUS.map((item, index) => {
-            // Check if current path matches menu link (exact or subpath)
-            const isActive =
-              pathname === item.link ||
-              (item.link !== "/" && pathname.startsWith(item.link));
-
-            return (
-              <Link key={index} href={item.link} className="block">
-                <div
-                  className={`flex items-center gap-5 px-5 py-3 cursor-pointer duration-300
-                    ${
-                      isActive
-                        ? "bg-[#00A99D] text-white"
-                        : "hover:bg-[#00A99D] hover:text-white text-gray-700"
-                    }
-                  `}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="font-medium">{item.menu}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
-          <button
-            onClick={() => {
-              localStorage.removeItem("userFullName");
-              localStorage.removeItem("userId");
-
-              console.log("User logged out successfully");
-            }}
-            className="flex items-center gap-5 px-5 py-4 w-full text-left cursor-pointer 
-                                         duration-300 text-gray-700 hover:bg-red-50 hover:text-red-600
-                                         transition-colors group"
-          >
-            <LogOut className="text-xl w-5 h-5 group-hover:text-red-600" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </div>
+      {/* Existing mobile header code... */}
+      <Sidebar
+        mobileMenuOpen={mobileMenuOpen}
+        handleMobileMenuToggle={handleMobileMenuToggle}
+      />
 
       {/* Main Content */}
       <div className="flex-1 md:ml-64 mt-16 md:mt-0">
         {renderHeader()}
 
-        <div className="flex pt-24">
+        <div className="flex pt-14">
           {/* Posts Section */}
           <div className="flex-1 p-6 md:mr-80">
             {loading ? (
@@ -965,9 +1340,16 @@ const ResourceLibrary = () => {
               </div>
             )}
           </div>
-          <div className=" hidden md:block">{renderCategories()}</div>
+          <div className="hidden md:block">{renderCategories()}</div>
         </div>
       </div>
+
+      {/* Image Modal */}
+      <ImageModal
+        isOpen={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        image={selectedImage}
+      />
     </div>
   );
 };

@@ -23,52 +23,270 @@ import { IoClose } from "react-icons/io5";
 import { MdEdit } from "react-icons/md";
 import { FaImage, FaUpload } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-
-import Quill from "quill";
-import "quill/dist/quill.snow.css"; // Import Quill styles
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+// ...existing imports...
+// Dynamic import for React Quill to avoid SSR issues
+import dynamic from "next/dynamic";
 
-// Define the ref for the RichTextEditor component
-// RichTextEditorHandle would have a getContent method that returns a string
+const ReactQuill = dynamic(() => import("react-quill"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] border rounded-lg bg-gray-50 flex items-center justify-center">
+      Loading editor...
+    </div>
+  ),
+});
 
-const RichTextEditor = forwardRef((_, ref) => {
-  const editorRef = useRef(null);
+// Import Quill styles
+import "react-quill/dist/quill.snow.css";
+import Sidebar from "@/components/Sidebar";
+
+// Professional React Quill Editor Component
+const ProfessionalRichTextEditor = forwardRef((props, ref) => {
+  const [content, setContent] = useState("");
   const quillRef = useRef(null);
 
-  useEffect(() => {
-    if (editorRef.current) {
-      quillRef.current = new Quill(editorRef.current, {
-        theme: "snow",
-        modules: {
-          toolbar: [
-            [{ header: [1, 2, 3, false] }],
-            ["bold", "italic", "underline", "strike"],
-            [{ list: "ordered" }, { list: "bullet" }],
-            ["link", "image"],
-            ["clean"],
-          ],
-        },
-        placeholder: "Write something...",
-      });
-    }
+  // Quill modules configuration
+  const modules = useMemo(
+    () => ({
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, false] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ list: "ordered" }, { list: "bullet" }],
+          [{ indent: "-1" }, { indent: "+1" }],
+          [{ align: [] }],
+          ["link", "image"],
+          ["blockquote", "code-block"],
+          [{ color: [] }, { background: [] }],
+          ["clean"],
+        ],
+      },
+      clipboard: {
+        matchVisual: false,
+      },
+    }),
+    []
+  );
 
-    return () => {
-      quillRef.current = null; // Cleanup to avoid memory leaks
-    };
+  // Quill formats configuration
+  const formats = useMemo(
+    () => [
+      "header",
+      "bold",
+      "italic",
+      "underline",
+      "strike",
+      "list",
+      "bullet",
+      "indent",
+      "align",
+      "link",
+      "image",
+      "blockquote",
+      "code-block",
+      "color",
+      "background",
+    ],
+    []
+  );
+
+  // Handle content change
+  const handleChange = useCallback((value) => {
+    setContent(value);
   }, []);
 
-  // Expose the getContent function to the parent component
+  // Expose methods through ref
   useImperativeHandle(ref, () => ({
     getContent: () => {
-      if (quillRef.current) {
-        return quillRef.current.root.innerHTML; // Return the HTML content
+      if (
+        content === "<p><br></p>" ||
+        content === "<p></p>" ||
+        content === ""
+      ) {
+        return "";
       }
-      return "";
+      return content;
+    },
+    setContent: (newContent) => {
+      setContent(newContent);
+    },
+    clearContent: () => {
+      setContent("");
+    },
+    focus: () => {
+      if (quillRef.current) {
+        quillRef.current.focus();
+      }
+    },
+    getEditor: () => {
+      return quillRef.current?.getEditor();
     },
   }));
 
-  return <div ref={editorRef} style={{ height: "300px" }} />;
+  return (
+    <div className="react-quill-container">
+      <ReactQuill
+        ref={quillRef}
+        theme="snow"
+        value={content}
+        onChange={handleChange}
+        modules={modules}
+        formats={formats}
+        placeholder="Write something..."
+        style={{
+          height: "300px",
+          marginBottom: "50px",
+        }}
+      />
+
+      {/* Custom styles for React Quill */}
+      <style jsx global>{`
+        .react-quill-container .ql-container {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            sans-serif;
+          font-size: 14px;
+          line-height: 1.6;
+        }
+
+        .react-quill-container .ql-editor {
+          min-height: 200px;
+          padding: 16px;
+        }
+
+        .react-quill-container .ql-editor.ql-blank::before {
+          color: #9ca3af;
+          font-style: normal;
+        }
+
+        .react-quill-container .ql-toolbar {
+          border-top: 1px solid #e5e7eb;
+          border-left: 1px solid #e5e7eb;
+          border-right: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+          border-radius: 8px 8px 0 0;
+        }
+
+        .react-quill-container .ql-container {
+          border-left: 1px solid #e5e7eb;
+          border-right: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+          border-radius: 0 0 8px 8px;
+        }
+
+        .react-quill-container .ql-toolbar .ql-formats {
+          margin-right: 12px;
+        }
+
+        .react-quill-container .ql-toolbar button:hover {
+          color: #00a99d;
+        }
+
+        .react-quill-container .ql-toolbar button.ql-active {
+          color: #00a99d;
+        }
+
+        .react-quill-container .ql-toolbar .ql-stroke {
+          stroke: currentColor;
+        }
+
+        .react-quill-container .ql-toolbar .ql-fill {
+          fill: currentColor;
+        }
+
+        .react-quill-container .ql-editor h1 {
+          font-size: 2em;
+          font-weight: 600;
+          margin: 0.67em 0;
+        }
+
+        .react-quill-container .ql-editor h2 {
+          font-size: 1.5em;
+          font-weight: 600;
+          margin: 0.83em 0;
+        }
+
+        .react-quill-container .ql-editor h3 {
+          font-size: 1.17em;
+          font-weight: 600;
+          margin: 1em 0;
+        }
+
+        .react-quill-container .ql-editor blockquote {
+          border-left: 4px solid #00a99d;
+          padding-left: 16px;
+          margin: 16px 0;
+          color: #6b7280;
+        }
+
+        .react-quill-container .ql-editor a {
+          color: #00a99d;
+          text-decoration: underline;
+        }
+
+        .react-quill-container .ql-editor img {
+          max-width: 100%;
+          height: auto;
+        }
+
+        .react-quill-container .ql-editor pre {
+          background: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding: 12px;
+          overflow-x: auto;
+        }
+
+        .react-quill-container .ql-editor .ql-code-block-container {
+          background: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          margin: 8px 0;
+        }
+
+        .react-quill-container .ql-snow .ql-tooltip {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .react-quill-container .ql-snow .ql-tooltip input {
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding: 4px 8px;
+        }
+
+        .react-quill-container .ql-snow .ql-tooltip a.ql-action {
+          color: #00a99d;
+        }
+
+        .react-quill-container .ql-snow .ql-tooltip a.ql-remove {
+          color: #ef4444;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+          .react-quill-container .ql-toolbar {
+            padding: 8px;
+          }
+
+          .react-quill-container .ql-toolbar .ql-formats {
+            margin-right: 8px;
+          }
+
+          .react-quill-container .ql-editor {
+            padding: 12px;
+          }
+        }
+      `}</style>
+    </div>
+  );
 });
+
+ProfessionalRichTextEditor.displayName = "ProfessionalRichTextEditor";
 
 // Constants for validation
 const MAX_TITLE_LENGTH = 100;
@@ -81,14 +299,13 @@ const ALLOWED_FILE_TYPES = [
 ];
 const MAX_TAGS = 10;
 
-// Rich text editor toolbar component removed
-
 /**
  * CreatePost Component
  * Allows users to create new forum threads with title, description, tags, and image upload
  */
 const CreatePost = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [messageApi, contextHolder] = message.useMessage();
 
   // Form state
@@ -107,6 +324,7 @@ const CreatePost = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [formTouched, setFormTouched] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Get userId from localStorage when component mounts
   useEffect(() => {
@@ -404,12 +622,155 @@ const CreatePost = () => {
     setDescription("");
     setErrors({});
     setFormTouched(false);
+    // Clear the rich text editor
+    if (editorRef.current) {
+      editorRef.current.clearContent();
+    }
   }, []);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleMobileMenuToggle = () => {
     setMobileMenuOpen((prev) => !prev);
   };
+
+  <style jsx global>{`
+    .react-quill-container .ql-container {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      border: none;
+    }
+
+    .react-quill-container .ql-editor {
+      min-height: 200px;
+      padding: 16px;
+      border: none;
+    }
+
+    .react-quill-container .ql-editor.ql-blank::before {
+      color: #9ca3af;
+      font-style: normal;
+    }
+
+    .react-quill-container .ql-toolbar {
+      border: none;
+      border-bottom: 1px solid #e5e7eb;
+      background: white;
+      border-radius: 0;
+      padding: 12px 16px;
+    }
+
+    .react-quill-container .ql-container {
+      border: none;
+      border-radius: 0;
+    }
+
+    .react-quill-container .ql-toolbar .ql-formats {
+      margin-right: 12px;
+    }
+
+    .react-quill-container .ql-toolbar button:hover {
+      color: #00a99d;
+    }
+
+    .react-quill-container .ql-toolbar button.ql-active {
+      color: #00a99d;
+    }
+
+    .react-quill-container .ql-toolbar .ql-stroke {
+      stroke: currentColor;
+    }
+
+    .react-quill-container .ql-toolbar .ql-fill {
+      fill: currentColor;
+    }
+
+    .react-quill-container .ql-editor h1 {
+      font-size: 2em;
+      font-weight: 600;
+      margin: 0.67em 0;
+    }
+
+    .react-quill-container .ql-editor h2 {
+      font-size: 1.5em;
+      font-weight: 600;
+      margin: 0.83em 0;
+    }
+
+    .react-quill-container .ql-editor h3 {
+      font-size: 1.17em;
+      font-weight: 600;
+      margin: 1em 0;
+    }
+
+    .react-quill-container .ql-editor blockquote {
+      border-left: 4px solid #00a99d;
+      padding-left: 16px;
+      margin: 16px 0;
+      color: #6b7280;
+    }
+
+    .react-quill-container .ql-editor a {
+      color: #00a99d;
+      text-decoration: underline;
+    }
+
+    .react-quill-container .ql-editor img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .react-quill-container .ql-editor pre {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      padding: 12px;
+      overflow-x: auto;
+    }
+
+    .react-quill-container .ql-editor .ql-code-block-container {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+
+    .react-quill-container .ql-snow .ql-tooltip {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .react-quill-container .ql-snow .ql-tooltip input {
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+
+    .react-quill-container .ql-snow .ql-tooltip a.ql-action {
+      color: #00a99d;
+    }
+
+    .react-quill-container .ql-snow .ql-tooltip a.ql-remove {
+      color: #ef4444;
+    }
+
+    @media (max-width: 768px) {
+      .react-quill-container .ql-toolbar {
+        padding: 8px;
+      }
+
+      .react-quill-container .ql-toolbar .ql-formats {
+        margin-right: 8px;
+      }
+
+      .react-quill-container .ql-editor {
+        padding: 12px;
+      }
+    }
+  `}</style>;
+
   return (
     <>
       {contextHolder}
@@ -442,70 +803,57 @@ const CreatePost = () => {
           </div>
         </div>
         {/* Sidebar */}
-        <div
-          className={`w-64 border-r border-gray-200 fixed h-screen overflow-y-auto bg-white z-30 transition-transform duration-300 ease-in-out ${
-            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } md:translate-x-0 md:block`}
-        >
-          <div className="p-5">
-            <Image
-              alt="GPDN Logo"
-              src={logo}
-              width={100}
-              className="h-auto hidden md:block"
-            />
-          </div>
-
-          <nav className="mt-5">
-            {sidebarMenus.map((item, index) => (
-              <Link key={index} href={item.link} className="block">
-                <div className="cursor-pointer hover:bg-[#00A99D] hover:text-white duration-300 flex items-center gap-5 px-5 py-3 transition-colors">
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="font-medium">{item.menu}</span>
-                </div>
-              </Link>
-            ))}
-          </nav>
-        </div>
+        <Sidebar
+          mobileMenuOpen={mobileMenuOpen}
+          handleMobileMenuToggle={handleMobileMenuToggle}
+        />
 
         {/* Main Content */}
-        <div className="flex-1 md:ml-64 mt-16 md:mt-0">
-          <div className="p-5 border-b border-gray-200">
-            <h1 className="text-xl font-semibold">Create Post</h1>
-          </div>
+        <div className="flex-1 md:ml-64 mt-16 md:mt-0 bg-gray-50 min-h-screen">
+          <div className="p-3 md:p-6">
+            <h1 className="text-2xl font-bold text-gray-800 mb-8">
+              Create Post
+            </h1>
 
-          <div className="p-5 max-w-4xl">
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Title</label>
-              <div className="relative">
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter title"
-                  suffix={<MdEdit className="text-gray-400" />}
-                  className="pr-10"
-                />
+            <div className="bg-white rounded-lg shadow-sm p-6 max-w-4xl">
+              {/* Title Section */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Legend Of X, Part 3"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
+                  />
+                  <MdEdit className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+                {errors.title && (
+                  <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                )}
               </div>
-            </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
-                Upload Thumbnail
-              </label>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const droppedFile = e.dataTransfer.files[0];
-                  if (droppedFile && droppedFile.type.startsWith("image/")) {
-                    setFile(droppedFile);
-                  } else {
-                    messageApi.error("Please upload an image file");
-                  }
-                }}
-              >
-                <div className="flex flex-col items-center">
+              {/* Upload Thumbnail Section */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Thumbnail
+                </label>
+                <div
+                  className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const droppedFile = e.dataTransfer.files[0];
+                    if (droppedFile && droppedFile.type.startsWith("image/")) {
+                      handleFileSelect(droppedFile);
+                    } else {
+                      messageApi.error("Please upload an image file");
+                    }
+                  }}
+                >
                   <input
                     type="file"
                     accept="image/*"
@@ -513,12 +861,77 @@ const CreatePost = () => {
                     id="thumbnail-upload"
                     onChange={(e) => {
                       const selectedFile = e.target.files[0];
-                      if (selectedFile) setFile(selectedFile);
+                      if (selectedFile) handleFileSelect(selectedFile);
                     }}
                   />
                   <label htmlFor="thumbnail-upload" className="cursor-pointer">
+                    <div className="flex flex-col items-center">
+                      <svg
+                        className="w-12 h-12 text-blue-400 mb-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      <p className="text-blue-600 font-medium">Click here</p>
+                      <p className="text-sm text-gray-600">
+                        to upload your file or drag.
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Supported Format: SVG, JPG, PNG (10mb each)
+                      </p>
+                    </div>
+                  </label>
+                  {file && (
+                    <div className="mt-4">
+                      <div className="text-sm text-gray-600 mb-2">
+                        Selected: {file.name}
+                      </div>
+                      {filePreview && (
+                        <img
+                          src={filePreview}
+                          alt="Preview"
+                          className="max-w-xs max-h-48 rounded-lg mx-auto"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {errors.file && (
+                  <p className="text-red-500 text-sm mt-1">{errors.file}</p>
+                )}
+              </div>
+
+              {/* Description Section */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                  <ProfessionalRichTextEditor ref={editorRef} />
+                </div>
+                {errors.description && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Tags Section */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Tags
+                  </label>
+                  <button className="text-gray-400 hover:text-gray-600 transition-colors">
                     <svg
-                      className="w-12 h-12 text-gray-400 mb-3"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -527,153 +940,170 @@ const CreatePost = () => {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        d="M19 9l-7 7-7-7"
                       />
                     </svg>
-                    <p className="text-sm text-blue-500">Click here</p>
-                    <p className="text-xs text-gray-500">
-                      to upload your file or drag.
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Supported Format: SVG, PNG, JPEG (max 800x400px)
-                    </p>
-                  </label>
-                  {file && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      Selected: {file.name}
-                    </div>
-                  )}
+                  </button>
                 </div>
-              </div>
-            </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
-                Description
-              </label>
-              <div className="border rounded-lg overflow-hidden">
-                <RichTextEditor ref={editorRef} />
-              </div>
-            </div>
+                {/* Selected Tags Display */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    >
+                      <IoClose
+                        className="w-4 h-4 mr-1 cursor-pointer hover:text-red-500 transition-colors"
+                        onClick={() => removeTag(tag)}
+                      />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
 
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium">Tags</label>
-                <button
-                  onClick={() => setSelectedTags([])}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Clear All
-                </button>
-              </div>
-              <div className="mb-4">
-                <Input
-                  value={tagInput}
-                  onChange={handleTagInputChange}
-                  onKeyDown={handleTagKeyDown}
-                  placeholder="Enter tags separated by commas (e.g. tag1, tag2, tag3)"
-                  className="mb-2"
-                />
-                <p className="text-xs text-gray-500">
-                  Press Enter or add a comma to add a tag. Maximum {MAX_TAGS}{" "}
-                  tags allowed.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {selectedTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-gray-100 rounded-full text-sm flex items-center gap-1"
+                {/* Predefined Tags */}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "AI/ML",
+                      "Crime",
+                      "Fitness",
+                      "Diet",
+                      "Machine Learning",
+                      "Healthcare",
+                    ].map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => handleTagSelect(tag)}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm transition-colors ${
+                          selectedTags.includes(tag)
+                            ? "bg-gray-200 text-gray-700"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        <IoClose className="w-4 h-4 mr-1" />
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {["Healthcare", "Finance", "Banking"].map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => handleTagSelect(tag)}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm transition-colors ${
+                          selectedTags.includes(tag)
+                            ? "bg-gray-200 text-gray-700"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        <IoClose className="w-4 h-4 mr-1" />
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Add Custom Tag Input */}
+                <div className="mt-4 flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={handleTagInputChange}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="Add custom tag..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors text-sm"
+                  />
+                  <button
+                    onClick={() => {
+                      const newTag = tagInput.trim();
+                      if (
+                        newTag &&
+                        !selectedTags.includes(newTag) &&
+                        selectedTags.length < MAX_TAGS
+                      ) {
+                        setSelectedTags((prev) => [...prev, newTag]);
+                        setTagInput("");
+                        validateField("tags", [...selectedTags, newTag]);
+                      }
+                    }}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
                   >
-                    {tag}
-                    <IoClose
-                      className="cursor-pointer"
-                      onClick={() => removeTag(tag)}
-                    />
-                  </span>
-                ))}
+                    Add
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center mt-3">
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Clear All
+                  </button>
+                </div>
+
+                {errors.tags && (
+                  <p className="text-red-500 text-sm mt-1">{errors.tags}</p>
+                )}
               </div>
-              {/* Predefined tags section removed */}
-            </div>
 
-            <div className="flex flex-col gap-2 md:flex md:justify-end md:gap-4 ">
-              <button
-                onClick={() => {
-                  setTitle("");
-                  setSelectedTags([]);
-                  setFile(null);
-                  // Reset the editor - we'll need to create a new Quill instance
-                  if (editorRef.current) {
-                    const editorElement = editorRef.current;
-                    // The editor will be reset on next render
-                  }
-                }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                disabled={isSubmitting}
-              >
-                Clear
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    setIsSubmitting(true);
-                    if (!title.trim()) {
-                      messageApi.error("Please enter a title");
-                      return;
-                    }
-                    // Get content from rich text editor
-                    const editorContent = editorRef.current?.getContent();
-                    if (!editorContent) {
-                      messageApi.error("Please enter a description");
-                      return;
-                    }
-
-                    if (!userId) {
-                      messageApi.error(
-                        "User ID not found. Please log in again."
-                      );
-                      return;
-                    }
-
-                    const response = await createThread({
-                      title,
-                      content: editorRef.current?.getContent() || "",
-                      authorId: userId,
-                      tags: selectedTags,
-                      file,
-                    });
-
-                    if (response.success) {
-                      messageApi.success("Thread created successfully!");
-                      // Clear form
-                      setTitle("");
-                      setSelectedTags([]);
-                      setFile(null);
-                      // Reset the editor - we'll need to create a new Quill instance
-                      if (editorRef.current) {
-                        const editorElement = editorRef.current;
-                        // The editor will be reset on next render
+              {/* Action Buttons */}
+              <div className="flex justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      setIsSubmitting(true);
+                      if (!title.trim()) {
+                        messageApi.error("Please enter a title");
+                        return;
+                      }
+                      // Get content from rich text editor
+                      const editorContent = editorRef.current?.getContent();
+                      if (!editorContent) {
+                        messageApi.error("Please enter a description");
+                        return;
                       }
 
-                      // Navigate to the forum page after successful post
-                      router.push("/forum");
-                    } else {
-                      messageApi.error(
-                        response.error || "Failed to create thread"
-                      );
+                      if (!userId) {
+                        messageApi.error(
+                          "User ID not found. Please log in again."
+                        );
+                        return;
+                      }
+
+                      const response = await createThread({
+                        title,
+                        content: editorRef.current?.getContent() || "",
+                        authorId: userId,
+                        tags: selectedTags,
+                        file,
+                      });
+
+                      if (response.success) {
+                        messageApi.success("Thread created successfully!");
+                        resetForm();
+                        // Navigate to the forum page after successful post
+                        router.push("/forum");
+                      } else {
+                        messageApi.error(
+                          response.error || "Failed to create thread"
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Error creating thread:", error);
+                      messageApi.error("Failed to create thread");
+                    } finally {
+                      setIsSubmitting(false);
                     }
-                  } catch (error) {
-                    console.error("Error creating thread:", error);
-                    messageApi.error("Failed to create thread");
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                }}
-                className="px-4 py-2 bg-[#00A99D] text-white rounded-md hover:bg-[#008F84] disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Posting..." : "Post"}
-              </button>
+                  }}
+                  className="px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Posting..." : "Post"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

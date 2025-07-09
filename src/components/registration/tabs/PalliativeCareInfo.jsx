@@ -82,7 +82,7 @@ function PalliativeCareInfo({ onContinue }) {
   return (
     <div className="w-full flex flex-col gap-5 justify-center items-center">
       <div className="flex flex-col gap-2 items-center">
-        <h1 className="text-3xl font-semibold">Palliative Care Information</h1>
+        {/* <h1 className="text-3xl font-semibold">Palliative Care Information</h1> */}
         {/* <p className="text-gray-500">
           Tell us about your experience in palliative care
         </p> */}

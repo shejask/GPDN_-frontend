@@ -19,6 +19,7 @@ import {
 } from "../../api/PalliativeUnit";
 import { usePathname } from "next/navigation"; // Add this import
 import { LogOut } from "lucide-react";
+import Sidebar from "../Sidebar";
 const PalliativeUnits = () => {
   const pathname = usePathname(); // Add this line
   const [showFilter, setShowFilter] = useState(false);
@@ -134,89 +135,10 @@ const PalliativeUnits = () => {
   return (
     <div className="grid md:flex min-h-screen bg-white">
       {/* Sidebar */}
-      <div className="flex md:hidden w-full h-16 bg-[#00A99D] fixed top-0 z-30 px-5 items-center justify-between">
-        <Image alt="GPDN Logo" src={logo} width={100} className="h-auto" />
-
-        {/* Animated Menu/Close Button */}
-        <div
-          onClick={handleMobileMenuToggle}
-          className="text-2xl text-white cursor-pointer p-2 rounded-md hover:bg-white hover:bg-opacity-20 transition-all duration-200 relative"
-        >
-          {/* Menu Icon */}
-          <MdMenu
-            className={`absolute inset-0 transition-all duration-300 ${
-              mobileMenuOpen
-                ? "rotate-180 opacity-0 scale-75"
-                : "rotate-0 opacity-100 scale-100"
-            }`}
-          />
-
-          {/* Close Icon */}
-          <MdClose
-            className={`absolute inset-0 transition-all duration-300 ${
-              mobileMenuOpen
-                ? "rotate-0 opacity-100 scale-100"
-                : "rotate-180 opacity-0 scale-75"
-            }`}
-          />
-        </div>
-      </div>
-      {/* Sidebar */}
-      <div
-        className={`w-64 border-r border-gray-200 fixed h-screen overflow-y-auto bg-white z-30 transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:block`}
-      >
-        <div className="p-5">
-          <Image
-            alt="GPDN Logo"
-            src={logo}
-            width={100}
-            className="h-auto hidden md:block"
-          />
-        </div>
-        <nav className="mt-5">
-          {sidebarMenus.map((item, index) => {
-            // Check if current path matches menu link (exact or subpath)
-            const isActive =
-              pathname === item.link ||
-              (item.link !== "/" && pathname.startsWith(item.link + "/"));
-
-            return (
-              <Link key={index} href={item.link} className="block">
-                <div
-                  className={`flex items-center gap-5 px-5 py-3 cursor-pointer duration-300 
-                    ${
-                      isActive
-                        ? "bg-[#00A99D] text-white"
-                        : "hover:bg-[#00A99D] hover:text-white text-gray-700"
-                    }
-                  `}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="font-medium">{item.menu}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
-          <button
-            onClick={() => {
-              localStorage.removeItem("userFullName");
-              localStorage.removeItem("userId");
-
-              console.log("User logged out successfully");
-            }}
-            className="flex items-center gap-5 px-5 py-4 w-full text-left cursor-pointer 
-                                 duration-300 text-gray-700 hover:bg-red-50 hover:text-red-600
-                                 transition-colors group"
-          >
-            <LogOut className="text-xl w-5 h-5 group-hover:text-red-600" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </div>
+      <Sidebar
+        mobileMenuOpen={mobileMenuOpen}
+        handleMobileMenuToggle={handleMobileMenuToggle}
+      />
 
       {/* Main Content */}
       <div className="md:flex-1 md:ml-64 mt-16 md:mt-0">
@@ -336,65 +258,81 @@ const PalliativeUnits = () => {
               ))
             ) : palliativeUnits.length > 0 ? (
               palliativeUnits.map((unit, index) => (
-                <div
-                  key={unit._id || index}
-                  className="bg-white  rounded-lg border border-gray-200 p-6"
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col">
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {unit.name}
-                      </h2>
-                      <div className="flex items-center font-semibold gap-2 text-gray-600">
-                        <IoLocationOutline className="text-lg" />
-                        <span>
-                          {unit.country ||
-                            unit.state ||
-                            "Location not specified"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-[#00A99D]">Services:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {unit.services ? (
-                          Array.isArray(unit.services) ? (
-                            unit.services.map((service, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1 bg-[#009DFF17] text-gray-700 rounded-md text-sm"
-                              >
-                                {typeof service === "object"
-                                  ? service.service || "Unknown Service"
-                                  : service}
+                <div className="">
+                  <div className="max-w-2xl">
+                    <div
+                      key={unit._id || index}
+                      className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-2">
+                        {/* Header Section */}
+                        <div className="flex flex-col gap-3">
+                          <h2 className="text-2xl font-bold text-gray-900">
+                            {unit.name}
+                          </h2>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <IoLocationOutline className="text-xl text-gray-500" />
+                            <span className="text-base">
+                              {unit.country ||
+                                unit.state ||
+                                "Location not specified"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Services Section */}
+                        <div className="space-y-4">
+                          <p className="tex font-medium text-[#00A99D]">
+                            Services:
+                          </p>
+                          <div className="flex flex-wrap gap-3">
+                            {unit.services ? (
+                              Array.isArray(unit.services) ? (
+                                unit.services.map((service, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-4 py-1 bg-[#E3F2FD] text-[#1976D2] rounded text-sm font-medium"
+                                  >
+                                    {typeof service === "object"
+                                      ? service.service || "Unknown Service"
+                                      : service}
+                                  </span>
+                                ))
+                              ) : typeof unit.services === "object" ? (
+                                // Handle case when services is a single object
+                                <span className="px-4 py-1 bg-[#E3F2FD] text-[#1976D2] rounded text-sm font-medium">
+                                  {unit.services.service || "Unknown Service"}
+                                </span>
+                              ) : (
+                                <span className="px-4 py-1 bg-[#E3F2FD] text-[#1976D2] rounded text-sm font-medium">
+                                  {String(unit.services)}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-gray-500">
+                                No services available
                               </span>
-                            ))
-                          ) : typeof unit.services === "object" ? (
-                            // Handle case when services is a single object
-                            <span className="px-3 py-1 bg-[#009DFF17] text-gray-700 rounded-md text-sm">
-                              {unit.services.service || "Unknown Service"}
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1 bg-[#009DFF17] text-gray-700 rounded-md text-sm">
-                              {String(unit.services)}
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-gray-500">
-                            No services available
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Contact Section */}
+                        <div className="flex my-2 items-center gap-2 text-gray-600">
+                          <FiPhone className="text-xl text-[#1976D2]" />
+                          <span className="text-base font-medium">
+                            {unit.contactDetails || "No contact information"}
                           </span>
-                        )}
+                        </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-gray-200"></div>
+
+                        {/* Contact Button */}
+                        <button className="w-fit px-6 py-3 mt-2 bg-[#00A99D] text-white rounded-xl hover:bg-[#008F84] transition-colors duration-150 text-sm font-medium shadow-sm">
+                          Contact
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center font-semibold gap-2 text-gray-600">
-                      <FiPhone className="text-lg" />
-                      <span className="text-sm">
-                        {unit.contactDetails || "No contact information"}
-                      </span>
-                    </div>
-                    <button className="w-fit px-4 py-2 bg-[#00A99D] text-white rounded-md hover:bg-[#008F84] transition-colors duration-150 text-sm font-medium">
-                      Contact
-                    </button>
                   </div>
                 </div>
               ))

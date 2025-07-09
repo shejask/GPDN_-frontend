@@ -40,6 +40,7 @@ import {
 } from "../../api/resource";
 import RichTextEditor from "./RichTextEditor";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 
 // Using default avatar image path
 const defaultAvatarPath = "/assets/default-avatar.png";
@@ -373,11 +374,11 @@ const UserResources = () => {
     if (isImage) {
       return (
         <div className="mt-4">
-          <div className="relative overflow-hidden rounded-lg border border-gray-200">
+          <div className="relative overflow-hidden rounded-lg">
             <img
               src={fileURL}
               alt={resource.title}
-              className="w-full h-48 object-cover"
+              className="w-72 h-72 object-cover rounded-lg"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.style.display = "none";
@@ -508,17 +509,14 @@ const UserResources = () => {
     <div className="user-resources">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">My Resources</h2>
-        <Button
-          type="primary"
-          onClick={() =>
-            message.info(
-              "Create resource functionality will be implemented soon"
-            )
-          }
-          className="bg-[#00A99D] hover:bg-[#008F84] border-none shadow-sm"
-        >
-          Create New Resource
-        </Button>
+        <Link href="/resource-library/create">
+          <Button
+            type="primary"
+            className="bg-[#00A99D] hover:bg-[#008F84] border-none shadow-sm"
+          >
+            Create New Resource
+          </Button>
+        </Link>
       </div>
 
       {loading ? (
@@ -541,21 +539,18 @@ const UserResources = () => {
           <p className="text-gray-500 mb-4">
             Start sharing your knowledge with the community!
           </p>
-          <Button
-            type="primary"
-            className="bg-[#00A99D] hover:bg-[#008F84] border-none shadow-sm px-6 py-2 h-auto"
-            onClick={() =>
-              message.info(
-                "Create resource functionality will be implemented soon"
-              )
-            }
-          >
-            Create Your First Resource
-          </Button>
+          <Link href={"/resource-library/create"}>
+            <Button
+              type="primary"
+              className="bg-[#00A99D] hover:bg-[#008F84] border-none shadow-sm px-6 py-2 h-auto"
+            >
+              Create Your First Resource
+            </Button>
+          </Link>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6">
             {paginatedResources.map((resource) => (
               <div
                 key={resource._id}
@@ -624,8 +619,15 @@ const UserResources = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {resource.title}
                 </h3>
-                <p className="text-gray-600 mb-4 leading-relaxed line-clamp-2">
+                <p className="text-gray-600  leading-relaxed line-clamp-2 md:w-4/5">
                   {resource.description}
+                </p>
+                <hr className=" mt-2"/>
+                <p className="text-gray-600 mb-4 leading-relaxed mt-5 md:w-4/5">
+                  <div
+                    className="prose"
+                    dangerouslySetInnerHTML={{ __html: resource.content }}
+                  />
                 </p>
 
                 {/* Approval Status */}
@@ -638,17 +640,17 @@ const UserResources = () => {
                 )}
 
                 {/* Category Tag */}
-                {resource.category && (
+                {resource.tags && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="px-4 py-2 bg-gradient-to-r from-[#E3F5FE] to-[#F0FFFE] text-[#00A99D] rounded-full text-sm font-medium border border-[#00A99D]/20">
-                      {resource.category}
-                    </span>
+                    {/* <span className="px-4 py-2 bg-gradient-to-r from-[#E3F5FE] to-[#F0FFFE] text-[#00A99D] rounded-full text-sm font-medium border border-[#00A99D]/20">
+                      {resource.tags}
+                    </span> */}
                     {resource.tags &&
                       Array.isArray(resource.tags) &&
                       resource.tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="px-4 py-2 bg-gradient-to-r from-[#E3F5FE] to-[#F0FFFE] text-[#00A99D] rounded-full text-sm font-medium border border-[#00A99D]/20"
+                          className="px-4 py-1 bg-blue-300 rounded-full text-sm font-medium border border-[#00A99D]/20"
                         >
                           {tag}
                         </span>

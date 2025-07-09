@@ -11,6 +11,7 @@ import {
   SearchOutlined,
   ShareAltOutlined,
   ReloadOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import {
   MdChatBubbleOutline,
@@ -42,7 +43,8 @@ import {
   editComment,
   addReply,
 } from "../../api/forum";
-import { LogOut } from "lucide-react";
+import { EyeIcon, LogOut } from "lucide-react";
+import Sidebar from "../Sidebar";
 
 // ============================================================================
 // SKELETON LOADERS
@@ -177,7 +179,7 @@ const ForumDiscussion = () => {
 
   // State for dynamic tags
   const [tags, setTags] = useState([]);
-  
+
   // Fetch tags from API
   useEffect(() => {
     const fetchTagsFromAPI = async () => {
@@ -185,27 +187,29 @@ const ForumDiscussion = () => {
         // Import the fetchTags function dynamically to avoid circular dependencies
         const { fetchTags } = await import("../../api/forum");
         const response = await fetchTags();
-        
+
         if (response.success && response.data && response.data.data) {
           // Check if the response data is an array of strings or a single string to be split
           if (Array.isArray(response.data.data)) {
             setTags(response.data.data);
-          } else if (typeof response.data.data[0] === 'string') {
+          } else if (typeof response.data.data[0] === "string") {
             // If it's a string like "tags, tag2, tag3", split it
-            const tagArray = response.data.data[0].split(',').map(tag => tag.trim());
+            const tagArray = response.data.data[0]
+              .split(",")
+              .map((tag) => tag.trim());
             setTags(tagArray);
           } else {
-            console.error('Unexpected tags format:', response.data.data);
+            console.error("Unexpected tags format:", response.data.data);
             // Fallback to default tags
             setDefaultTags();
           }
         } else {
-          console.error('Failed to fetch tags:', response);
+          console.error("Failed to fetch tags:", response);
           // Fallback to default tags
           setDefaultTags();
         }
       } catch (error) {
-        console.error('Error fetching tags:', error);
+        console.error("Error fetching tags:", error);
         // Fallback to default tags
         setDefaultTags();
       }
@@ -335,7 +339,7 @@ const ForumDiscussion = () => {
         author: thread.authorId?.fullName || "Anonymous",
         title: thread.title,
         time: formatTime(thread.createdAt),
-        content: stripHtml(thread.content),
+        content: thread.content,
         tags: parsedTags,
         upvotes: thread.upVote?.length || 0,
         downvotes: thread.downVote?.length || 0,
@@ -415,9 +419,16 @@ const ForumDiscussion = () => {
           console.log("Threads array:", threadsArray);
 
           // Filter out threads where approvalStatus is false before transformation
-          const approvedThreads = threadsArray.filter(thread => thread.approvalStatus === true);
-          console.log("Filtered approved threads:", approvedThreads.length, "out of", threadsArray.length);
-          
+          const approvedThreads = threadsArray.filter(
+            (thread) => thread.approvalStatus === true
+          );
+          console.log(
+            "Filtered approved threads:",
+            approvedThreads.length,
+            "out of",
+            threadsArray.length
+          );
+
           const transformedPosts = approvedThreads
             .map(transformThreadToPost)
             .filter(Boolean); // Remove null entries
@@ -635,7 +646,7 @@ const ForumDiscussion = () => {
 
           // Copy link to clipboard if supported
           if (navigator.clipboard) {
-            const shareUrl = `${window.location.origin}/forum/thread/${threadId}`;
+            const shareUrl = `${window.location.origin}/forum/${threadId}`;
             await navigator.clipboard.writeText(shareUrl);
             message.info("Link copied to clipboard");
           }
@@ -1097,98 +1108,10 @@ const ForumDiscussion = () => {
     <div className="md:flex md:min-h-screen md:bg-white">
       {/* Sidebar - Fixed */}
       {/* Mobile Header */}
-      <div className="flex md:hidden w-full h-16 bg-[#00A99D] fixed top-0 z-30 px-5 items-center justify-between">
-        <Image alt="GPDN Logo" src={logo} width={100} className="h-auto" />
-
-        {/* Animated Menu/Close Button */}
-        <div
-          onClick={handleMobileMenuToggle}
-          className="text-2xl text-white cursor-pointer p-2 rounded-md hover:bg-white hover:bg-opacity-20 transition-all duration-200 relative"
-        >
-          {/* Menu Icon */}
-          <MdMenu
-            className={`absolute inset-0 transition-all duration-300 ${
-              mobileMenuOpen
-                ? "rotate-180 opacity-0 scale-75"
-                : "rotate-0 opacity-100 scale-100"
-            }`}
-          />
-
-          {/* Close Icon */}
-          <MdClose
-            className={`absolute inset-0 transition-all duration-300 ${
-              mobileMenuOpen
-                ? "rotate-0 opacity-100 scale-100"
-                : "rotate-180 opacity-0 scale-75"
-            }`}
-          />
-        </div>
-      </div>
-
-      {/* Overlay for mobile menu */}
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden transition-opacity duration-300 ${
-          mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={handleMobileMenuToggle}
+      <Sidebar
+        mobileMenuOpen={mobileMenuOpen}
+        handleMobileMenuToggle={handleMobileMenuToggle}
       />
-
-      {/* Mobile Sidebar Menu */}
-      <div
-        className={`w-64 border-r border-gray-200 fixed h-screen overflow-y-auto bg-white z-30 transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:block`}
-      >
-        <div className="p-5">
-          <Image
-            alt="GPDN Logo"
-            src={logo}
-            width={100}
-            className="h-auto hidden md:block"
-          />
-        </div>
-        <nav className="mt-5">
-          {sidebarMenus.map((item, index) => {
-            // Check if current path matches menu link (exact or subpath)
-            const isActive =
-              pathname === item.link ||
-              (item.link !== "/" && pathname.startsWith(item.link + "/"));
-
-            return (
-              <Link key={index} href={item.link} className="block">
-                <div
-                  className={`flex items-center gap-5 px-5 py-3 cursor-pointer duration-300
-                    ${
-                      isActive
-                        ? "bg-[#00A99D] text-white"
-                        : "hover:bg-[#00A99D] hover:text-white text-gray-700"
-                    }
-                  `}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="font-medium">{item.menu}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
-          <button
-            onClick={() => {
-              localStorage.removeItem("userFullName");
-              localStorage.removeItem("userId");
-
-              console.log("User logged out successfully");
-            }}
-            className="flex items-center gap-5 px-5 py-4 w-full text-left cursor-pointer 
-                                 duration-300 text-gray-700 hover:bg-red-50 hover:text-red-600
-                                 transition-colors group"
-          >
-            <LogOut className="text-xl w-5 h-5 group-hover:text-red-600" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </div>
 
       {/* Main Content - Adjusted margin for fixed sidebar */}
       <div className="md:flex-1 md:ml-64">
@@ -1232,8 +1155,8 @@ const ForumDiscussion = () => {
                 {emptyStateContent}
                 {posts.map((post) => (
                   <div
-                    key={post.id}
-                    className="mb-6 p-5 border border-gray-100 rounded-lg hover:shadow-sm transition-shadow"
+                    className="mb-6 p-5 border border-gray-100 rounded-lg hover:shadow-sm transition-shadow group-hover:border-gray-300 cursor-pointer bg-white"
+                    // Optionally, you can add onClick to close comment sections, etc.
                   >
                     {/* Author Info */}
                     <div className="flex items-center gap-3 mb-3">
@@ -1268,9 +1191,14 @@ const ForumDiscussion = () => {
                     </p>
 
                     {/* Content */}
-                    <p className="text-gray-700 mb-3 leading-relaxed">
-                      {post.content}
-                    </p>
+                    {post.content && (
+                      <div className="mt-4 mb-4 prose line-clamp-3 max-w-none bg-gray-50 p-4 rounded-lg font-light">
+                        <div
+                          className="text-gray-800 line-clamp-5 leading-relaxed overflow-auto"
+                          dangerouslySetInnerHTML={{ __html: post.content }}
+                        />
+                      </div>
+                    )}
 
                     {/* Image */}
                     {post.hasImage && post.image && (
@@ -1278,7 +1206,7 @@ const ForumDiscussion = () => {
                         <img
                           src={post.image}
                           alt="Thread attachment"
-                          className="rounded-lg w-full h-32 md:h-72 object-cover"
+                          className="rounded-lg w-full h-32 md:h-72 md:w-72 object-cover"
                           onError={(e) => {
                             e.target.style.display = "none";
                           }}
@@ -1292,7 +1220,7 @@ const ForumDiscussion = () => {
                         {post.tags.map((tag, tagIndex) => (
                           <span
                             key={tagIndex}
-                            className="px-3 py-1 bg-[#E3F5FE] text-[#00A99D] rounded text-sm font-medium"
+                            className="px-3 py-1 bg-[#51b0e071] text-[#2f2d8f] rounded-full text-sm font-medium"
                           >
                             {tag}
                           </span>
@@ -1301,11 +1229,11 @@ const ForumDiscussion = () => {
                     )}
 
                     {/* Actions */}
-                    <div className="md:flex md:items-center md:gap-6 text-gray-500 text-sm flex gap-2">
+                    <div className="md:flex md:items-center md:gap-6 text-gray-500 text-sm flex  gap-2">
                       <button
                         onClick={() => handleUpvote(post.id)}
                         disabled={actionLoading[`upvote-${post.id}`]}
-                        className="flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/4 md:w-auto text-xs md:text-base md:px-3 md:py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/5 md:w-auto text-xs md:text-sm md:px-3 md:py-1 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         <ArrowUpOutlined
                           className={
@@ -1321,7 +1249,7 @@ const ForumDiscussion = () => {
                       <button
                         onClick={() => handleDownvote(post.id)}
                         disabled={actionLoading[`downvote-${post.id}`]}
-                        className="flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/4 md:w-auto text-xs md:text-base md:px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/5 md:w-auto text-xs md:text-sm md:px-3 py-1 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         <ArrowUpOutlined
                           className={`transform rotate-180 ${
@@ -1343,7 +1271,7 @@ const ForumDiscussion = () => {
                             fetchCommentsForThread(post.id);
                           }
                         }}
-                        className="flex items-center gap-1 border justify-center md:justify-start border-gray-200 w-1/4 md:w-auto text-xs md:text-base md:px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-1 border justify-center md:justify-start border-gray-200 w-1/5 md:w-auto text-xs md:text-sm md:px-3 py-1 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         <MdChatBubbleOutline />
                         <span className=" hidden md:block">Comment · </span>
@@ -1353,7 +1281,7 @@ const ForumDiscussion = () => {
                       <button
                         onClick={() => handleShare(post.id)}
                         disabled={actionLoading[`share-${post.id}`]}
-                        className="flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/4 md:w-auto text-xs md:text-base md:px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/5 md:w-auto text-xs md:text-sm md:px-3 py-1 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         <ShareAltOutlined
                           className={
@@ -1365,6 +1293,17 @@ const ForumDiscussion = () => {
                         <span className=" hidden md:block">Share · </span>{" "}
                         {post.shares || 0}
                       </button>
+                      <Link
+                        key={post.id}
+                        href={`/forum/${post.id}`}
+                        style={{ textDecoration: "none" }}
+                        className=" flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/5 md:w-auto text-xs md:text-sm md:px-3 py-1 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        <button className="flex items-center gap-1">
+                          <EyeOutlined className="" />
+                          View
+                        </button>
+                      </Link>
                     </div>
 
                     {/* Comment Section */}
