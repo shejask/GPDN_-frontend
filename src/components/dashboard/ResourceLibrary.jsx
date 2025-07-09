@@ -1085,7 +1085,7 @@ const ResourceLibrary = () => {
           <div className="space-y-3">
             {/* Images */}
             {resource.files.filter((file) => isImageFile(file)).length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {resource.files
                   .filter((file) => isImageFile(file))
                   .map((file, index) => {
@@ -1258,7 +1258,7 @@ const ResourceLibrary = () => {
     <div className="w-64 bg-white fixed right-0 h-screen overflow-y-auto border-l border-gray-200 pt-0 mt-5">
       <div className="p-6">
         <h2 className="text-2xl font-semibold mb-8 text-gray-900 border-b border-gray-200 pb-4">
-          Categories
+          Tags
         </h2>
         <div className="space-y-3">
           {tagsLoading ? (
@@ -1266,12 +1266,12 @@ const ResourceLibrary = () => {
               <Spin size="small" />
             </div>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {tags.map((tag, index) => (
                 <button
                   key={`${tag}-${index}`}
                   onClick={() => handleCategoryFilter(tag)}
-                  className={` text-left px-4 py-1 rounded-full text-sm font-medium transition-all duration-200 border ${
+                  className={` text-left px-4 py-1 rounded-full text-sm font-medium transition-all bg-blue-100 duration-200  ${
                     selectedCategory === tag
                       ? "bg-gray-900 text-white border-gray-900 shadow-sm"
                       : "text-gray-700 hover:bg-gray-50 border-gray-300 hover:border-gray-400"
@@ -1299,9 +1299,9 @@ const ResourceLibrary = () => {
       <div className="flex-1 md:ml-64 mt-16 md:mt-0">
         {renderHeader()}
 
-        <div className="flex pt-14">
+        <div className="flex pt-14 mt-8 md:pt-0 md:mt-16">
           {/* Posts Section */}
-          <div className="flex-1 p-6 md:mr-80">
+          <div className="flex-1 p-3 md:p-6 md:mr-80">
             {loading ? (
               <div className="flex justify-center items-center py-20">
                 <Spin size="large" />

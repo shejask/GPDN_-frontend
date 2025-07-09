@@ -6,17 +6,16 @@ const blogRoutes = {
   SearchNewsAndBlogs: "/blog/SearchNewsAndBlogs",
   FetchNewsAndBlogsById: "/blog/FetchNewsAndBlogsById",
   createNewsAndBlogs: "/blog/AddNewsAndBlogs",
-  filterNewsAndBlogs: "/blog/filterNewsAndBlogs",
+  filterNewsAndBlogs: "/blog/fetchCategory",
   filterBlogsbyCategory: "/blog/categoryBasedBlog",
 
-  
   // Comment endpoints
   addComment: "/blog/AddComment",
   editComment: "/blog/EditComment",
   deleteComment: "/blog/DeleteComment",
   commentlikes: "/blog/CommentLikes",
   commentdislikes: "/blog/CommentDislikes",
-  realtimeReplies: "/blog/Real-time-replies"
+  realtimeReplies: "/blog/Real-time-replies",
 };
-  
-export default blogRoutes;  
+
+export default blogRoutes;

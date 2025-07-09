@@ -148,7 +148,7 @@ const PalliativeUnits = () => {
           <div className="flex gap-3 relative filter-container">
             <Input
               placeholder="Search Palliative Units..."
-              className="md:w-64 h-9 md:h-10 mt-1"
+              className="md:w-64 h-9 md:h-10 "
               prefix={<IoSearchOutline className="text-gray-400" />}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}

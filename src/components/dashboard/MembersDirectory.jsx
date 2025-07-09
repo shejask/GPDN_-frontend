@@ -546,6 +546,8 @@ const MembersDirectory = () => {
       </div>
     );
 
+  // Replace the renderTableContent function with this updated version:
+
   const renderTableContent = () => {
     if (isDataLoading) {
       return (
@@ -667,21 +669,195 @@ const MembersDirectory = () => {
     ));
   };
 
+  // Replace the entire "Members Table" section (starting from the comment "/* Members Table */" to the end of the component)
+
+  {
+    /* Members Table */
+  }
+  <div
+    className={`p-5 mt-16 md:mt-10 ${
+      hasActiveFilters || isSearchActive ? "pt-2" : "pt-20"
+    }`}
+  >
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Members{" "}
+            {!isDataLoading && Array.isArray(members) && `(${members.length})`}
+          </h2>
+          {!isDataLoading && Array.isArray(members) && members.length > 0 && (
+            <div className="text-sm text-gray-500">
+              {isSearchActive && `Search results for "${searchInput}"`}
+              {hasActiveFilters && !isSearchActive && "Filtered results"}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
+                  Full Name
+                </th>
+                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
+                  Qualification
+                </th>
+                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
+                  Location
+                </th>
+                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
+                  Email Address
+                </th>
+                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
+                  Contact
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {renderTableContent()}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden">
+          {isDataLoading ? (
+            <div className="py-12 text-center">
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00A99D]"></div>
+                <span className="text-gray-500">Loading members...</span>
+              </div>
+            </div>
+          ) : !Array.isArray(members) || members.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="text-gray-400 text-4xl">👥</div>
+                <span className="text-gray-500 font-medium">
+                  {isSearchActive || hasActiveFilters
+                    ? "No matching members found"
+                    : "No members found"}
+                </span>
+                {(isSearchActive || hasActiveFilters) && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-[#00A99D] hover:text-[#008F84] font-medium text-sm"
+                  >
+                    Clear filters and search
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {members.map((member, index) => (
+                <div
+                  key={member._id || index}
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                        {member.imageURL ? (
+                          <Image
+                            src={member.imageURL}
+                            alt={member.fullName || "Member"}
+                            width={48}
+                            height={48}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-[#00A99D] text-white flex items-center justify-center text-xl font-medium">
+                            {member.fullName?.charAt(0) || "?"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 text-lg truncate">
+                            {member.fullName || "Unknown"}
+                          </h3>
+                          {member.role === "moderator" && (
+                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full flex-shrink-0">
+                              Moderator
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          <div className="font-medium">
+                            {member.medicalQualification || "Not specified"}
+                          </div>
+                          {member.yearOfGraduation && (
+                            <div className="text-xs text-gray-500">
+                              Graduated {member.yearOfGraduation}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          {getCountryCode(member.countryOfPractice) ? (
+                            <ReactCountryFlag
+                              countryCode={getCountryCode(
+                                member.countryOfPractice
+                              )}
+                              svg
+                              style={{ width: "1.2em", height: "1.2em" }}
+                            />
+                          ) : (
+                            <span>🌐</span>
+                          )}
+                          <span className="text-sm text-gray-600">
+                            {member.countryOfPractice || "Not specified"}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500 mb-3">
+                          {member.email || "Not provided"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 ml-3">
+                      {member.phoneNumber ? (
+                        <button
+                          onClick={() =>
+                            handleWhatsAppConnect(member.phoneNumber)
+                          }
+                          className="px-4 py-2 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors duration-150 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow"
+                        >
+                          <FaWhatsapp className="text-base" />
+                          <span>Connect</span>
+                        </button>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          No contact
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>;
+
   return (
     <div className="flex min-h-screen bg-white">
-      <div className=" hidden md:block">{renderSidebar()}</div>
+      <div className=" ">{renderSidebar()}</div>
 
       {/* Main Content */}
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1 mt-16 md:mt-0 md:ml-64">
         {/* Header */}
-        <div className="p-5 md:flex justify-between items-center border-b border-gray-200 bg-white fixed w-[calc(100%-256px)] z-10">
-          <h1 className="text-xl font-semibold">Members Directory</h1>
+        <div className="p-5 md:flex justify-between items-center border-b border-gray-200 bg-white fixed md:w-[calc(100%-256px)] z-10">
+          <h1 className="text-xl w-full font-semibold">Members Directory</h1>
 
           <div className="flex gap-3 relative mt-2 md:mt-0">
             <div className="relative">
               <Input
                 placeholder="Search Any Members..."
-                className="w-64"
+                className="w-64 h-10"
                 value={searchInput}
                 prefix={<IoSearchOutline className="text-gray-400" />}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -719,12 +895,12 @@ const MembersDirectory = () => {
 
         {/* Members Table */}
         <div
-          className={`p-5 mt-0 md:mt-10 ${
+          className={`p-2 md:p-5 mt-16 md:mt-20 ${
             hasActiveFilters || isSearchActive ? "pt-2" : "pt-20"
           }`}
         >
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="p-6">
+            <div className="p-2 md:p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold text-gray-800">
                   Members{" "}
@@ -744,7 +920,8 @@ const MembersDirectory = () => {
                   )}
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
@@ -769,6 +946,125 @@ const MembersDirectory = () => {
                     {renderTableContent()}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden ">
+                {isDataLoading ? (
+                  <div className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00A99D]"></div>
+                      <span className="text-gray-500">Loading members...</span>
+                    </div>
+                  </div>
+                ) : !Array.isArray(members) || members.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="text-gray-400 text-4xl">👥</div>
+                      <span className="text-gray-500 font-medium">
+                        {isSearchActive || hasActiveFilters
+                          ? "No matching members found"
+                          : "No members found"}
+                      </span>
+                      {(isSearchActive || hasActiveFilters) && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-[#00A99D] hover:text-[#008F84] font-medium text-sm"
+                        >
+                          Clear filters and search
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {members.map((member, index) => (
+                      <div
+                        key={member._id || index}
+                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                              {member.imageURL ? (
+                                <Image
+                                  src={member.imageURL}
+                                  alt={member.fullName || "Member"}
+                                  width={48}
+                                  height={48}
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-[#00A99D] text-white flex items-center justify-center text-xl font-medium">
+                                  {member.fullName?.charAt(0) || "?"}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-gray-900 truncate">
+                                  {member.fullName || "Unknown"}
+                                </h3>
+                                {/* {member.role === "moderator" && (
+                                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full flex-shrink-0">
+                                    Moderator
+                                  </span>
+                                )} */}
+                              </div>
+                              <div className="text-sm text-gray-600 mb-2">
+                                <div className="font-medium">
+                                  {member.medicalQualification ||
+                                    "Not specified"}
+                                </div>
+                                {member.yearOfGraduation && (
+                                  <div className="text-xs text-gray-500">
+                                    Graduated {member.yearOfGraduation}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mb-2">
+                                {getCountryCode(member.countryOfPractice) ? (
+                                  <ReactCountryFlag
+                                    countryCode={getCountryCode(
+                                      member.countryOfPractice
+                                    )}
+                                    svg
+                                    style={{ width: "1.2em", height: "1.2em" }}
+                                  />
+                                ) : (
+                                  <span>🌐</span>
+                                )}
+                                <span className="text-sm text-gray-600">
+                                  {member.countryOfPractice || "Not specified"}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-500 mb-3">
+                                {member.email || "Not provided"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 ml-3">
+                            {member.phoneNumber ? (
+                              <button
+                                onClick={() =>
+                                  handleWhatsAppConnect(member.phoneNumber)
+                                }
+                                className="px-2 py-2 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors duration-150 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow"
+                              >
+                                <FaWhatsapp className="text-base" />
+                                <span>Connect</span>
+                              </button>
+                            ) : (
+                              <span className="text-sm text-gray-400">
+                                No contact
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

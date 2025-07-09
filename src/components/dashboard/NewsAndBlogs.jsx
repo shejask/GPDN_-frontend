@@ -67,6 +67,8 @@ const NewsAndBlogs = () => {
         if (response.success && response.data.data) {
           setCategories(response.data.data);
         }
+
+        console.log("Fetched categories:", response.data.data);
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
@@ -268,11 +270,13 @@ const NewsAndBlogs = () => {
     try {
       setSelectedCategory(category);
 
-      const response = await getBlogsByCategory(category);
+      // Use the category._id to fetch blogs for this category
+      const response = await getBlogsByCategory(category._id);
       if (response.success && response.data.data) {
         setBlogs(response.data.data);
-        message.success(`Filtered blogs by category: ${category}`);
+        message.success(`Filtered blogs by category: ${category.category}`);
       } else {
+        setBlogs([]);
         message.error(response.error || "Failed to filter blogs by category");
       }
     } catch (error) {
@@ -297,6 +301,7 @@ const NewsAndBlogs = () => {
         setBlogs(response.data.data);
         message.success("All filters cleared");
       } else {
+        setBlogs([]);
         message.error(response.error || "Failed to fetch blogs");
       }
     } catch (error) {
@@ -466,7 +471,7 @@ const NewsAndBlogs = () => {
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selectedCategory && (
                       <span className="text-xs bg-[#00A99D] text-white px-2 py-1 rounded">
-                        Category: {selectedCategory}
+                        Category: {selectedCategory.category}
                       </span>
                     )}
                     {selectedDate && (
@@ -513,17 +518,18 @@ const NewsAndBlogs = () => {
                   <h3 className="font-medium">Select Category</h3>
                 </div>
                 <div className="py-1 max-h-60 overflow-y-auto">
-                  {categories.map((category, index) => (
+                  {categories.map((category) => (
                     <button
-                      key={index}
+                      key={category._id}
                       onClick={() => handleCategoryFilter(category)}
                       className={`w-full px-4 py-2 text-left hover:bg-[#00A99D] hover:text-white transition-colors ${
-                        selectedCategory === category
+                        selectedCategory &&
+                        selectedCategory._id === category._id
                           ? "bg-[#00A99D] text-white"
                           : ""
                       }`}
                     >
-                      {category}
+                      {category.category}
                     </button>
                   ))}
                 </div>
@@ -557,7 +563,7 @@ const NewsAndBlogs = () => {
         {/* Blog Posts Grid */}
         <div className="pt-20 p-5 mt-10">
           {loading ? (
-            <div className="md:grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((item) => (
                 <BlogSkeleton key={item} />
               ))}
@@ -585,8 +591,8 @@ const NewsAndBlogs = () => {
               )}
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {blogs.map((post) => {
+            <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-6">
+              {(Array.isArray(blogs) ? blogs : []).map((post) => {
                 const stats = getBlogStats(post);
                 const userId = localStorage.getItem("userId");
                 const isLiked = stats.isLiked(userId);
@@ -598,30 +604,31 @@ const NewsAndBlogs = () => {
                     className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                   >
                     <div className="p-3">
-                      <div className="flex items-center h-10 gap-3 mb-4">
-                        <div className="flex items-center gap-2 w-full">
-                          <div>{/* Placeholder for future author info */}</div>
-                        </div>
-                      </div>
                       <Link href={`/news-blogs/${post._id}`}>
                         {post.thumbnail && (
-                          <div className="w-full h-32 md:h-60 rounded-xl mb-2">
+                          <div className="w-full h-40 md:h-60 rounded-lg mb-2">
                             <Image
                               src={post.thumbnail}
                               alt={post.title}
                               width={500}
                               height={300}
-                              className="w-full h-full object-cover rounded-2xl"
+                              className="w-full h-full object-cover rounded-lg"
                             />
                           </div>
                         )}
                         <div className="mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-[#00A99D] hover:text-[#00A99D] font-medium">
-                              {post.category}
+                            <span className="text-sm bg-teal-300 px-3 py-1 rounded-full text-teal-800 hover:text-teal-900 font-medium">
+                              {typeof post.category === "object" &&
+                              post.category !== null
+                                ? post.category.category
+                                : // If it's an ID, find the category name from categories array
+                                  categories.find(
+                                    (cat) => cat._id === post.category
+                                  )?.category || post.category}
                             </span>
-                            <span className="text-sm text-gray-500">
-                              {moment(post.createdAt).format("DD/MM/YYYY")}
+                            <span className="text-xs text-gray-400">
+                              {moment(post.createdAt).format("DD-MM-YYYY")}
                             </span>
                           </div>
                           <h2 className="text-xl font-semibold mt-2 hover:text-[#00A99D] transition-colors">
@@ -657,10 +664,10 @@ const NewsAndBlogs = () => {
                           {isDisliked ? <BiSolidDislike /> : <BiDislike />}
                           <span>{stats.dislikeCount} Dislikes</span>
                         </button>
-                        <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                           <FaRegComment />
                           <span>{stats.commentCount} Comments</span>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>

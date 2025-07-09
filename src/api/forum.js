@@ -1,7 +1,7 @@
 /**
  * Forum API Client
  * Production-grade implementation for thread management
- * 
+ *
  * @module forum
  * @author GPDN Team
  * @version 1.0.0
@@ -19,7 +19,7 @@ const formatResponse = (response) => ({
   success: true,
   data: response.data,
   status: response.status,
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
 });
 
 /**
@@ -30,13 +30,13 @@ const formatResponse = (response) => ({
  */
 const formatError = (error, operation) => {
   console.error(`Error ${operation}:`, error);
-  
+
   return {
     success: false,
     error: error.response?.data?.message || `Failed to ${operation}`,
     status: error.response?.status || 500,
     timestamp: new Date().toISOString(),
-    details: error.response?.data || {}
+    details: error.response?.data || {},
   };
 };
 
@@ -47,15 +47,15 @@ const formatError = (error, operation) => {
  * @returns {Object} Validation result with isValid flag and error message
  */
 const validateFields = (data, requiredFields) => {
-  const missingFields = requiredFields.filter(field => !data[field]);
-  
+  const missingFields = requiredFields.filter((field) => !data[field]);
+
   if (missingFields.length > 0) {
     return {
       isValid: false,
-      error: `Missing required fields: ${missingFields.join(', ')}`
+      error: `Missing required fields: ${missingFields.join(", ")}`,
     };
   }
-  
+
   return { isValid: true };
 };
 
@@ -71,13 +71,13 @@ const validateFields = (data, requiredFields) => {
 export const fetchThreadById = async (threadId) => {
   try {
     if (!threadId) {
-      throw new Error('Thread ID is required');
+      throw new Error("Thread ID is required");
     }
-    
+
     const response = await Api.get(`${forumRoutes.fetchThread}/${threadId}`);
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'fetch thread');
+    return formatError(error, "fetch thread");
   }
 };
 
@@ -90,7 +90,7 @@ export const fetchThreads = async () => {
     const response = await Api.get(forumRoutes.fetchThread);
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'fetch threads');
+    return formatError(error, "fetch threads");
   }
 };
 
@@ -101,57 +101,75 @@ export const fetchThreads = async () => {
  */
 export const createThread = async (threadData) => {
   // Validate required fields
-  const validation = validateFields(threadData, ['title', 'content', 'authorId']);
+  const validation = validateFields(threadData, [
+    "title",
+    "content",
+    "authorId",
+  ]);
   if (!validation.isValid) {
     return {
       success: false,
       error: validation.error,
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
+  // console.log("Thread Data:", threadData);
+
   try {
     // Handle file upload if present
     let formData;
     if (threadData.file) {
       formData = new FormData();
       Object.entries(threadData).forEach(([key, value]) => {
-        if (key === 'file') {
-          formData.append('file', value);
-        } else if (key === 'tags') {
+        if (key === "file") {
+          formData.append("file", value);
+        } else if (key === "tags") {
           // Ensure tags are always sent as a clean JSON array
           const tagsArray = Array.isArray(value) ? value : [value];
-          formData.append('tags', JSON.stringify(tagsArray));
+          formData.append("tags", JSON.stringify(tagsArray));
+          console.log("Formatted Tags:", JSON.stringify(tagsArray));
+          console.log(typeof(tagsArray));
+          
         } else {
           formData.append(key, value);
         }
       });
     }
-    
+
+
+
     // Ensure tags are properly formatted in the request body when not using FormData
     let requestData = formData;
     if (!formData) {
       // If not using FormData, ensure tags are properly formatted in the request body
       requestData = {
         ...threadData,
-        tags: Array.isArray(threadData.tags) ? threadData.tags : [threadData.tags]
+        tags: Array.isArray(threadData.tags)
+          ? threadData.tags
+          : [threadData.tags],
       };
     }
-    
+
     const response = await Api.post(
-      forumRoutes.addThread, 
+      forumRoutes.addThread,
       requestData,
-      formData ? {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      } : {}
+      formData
+        ? {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        : {}
     );
+
+    console.log(response.data);
     
+
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'create thread');
+    return formatError(error, "create thread");
   }
 };
 
@@ -164,17 +182,17 @@ export const deleteThread = async (threadId) => {
   if (!threadId) {
     return {
       success: false,
-      error: 'Thread ID is required',
+      error: "Thread ID is required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     const response = await Api.post(forumRoutes.deleteThread, { threadId });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'delete thread');
+    return formatError(error, "delete thread");
   }
 };
 
@@ -184,20 +202,22 @@ export const deleteThread = async (threadId) => {
  * @returns {Promise<Object>} Response with search results or error
  */
 export const searchThreads = async (searchInput) => {
-  if (!searchInput || searchInput.trim() === '') {
+  if (!searchInput || searchInput.trim() === "") {
     return {
       success: false,
-      error: 'Search input is required',
+      error: "Search input is required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
-    const response = await Api.post(forumRoutes.threadSearch, { searchInp: searchInput });
+    const response = await Api.post(forumRoutes.threadSearch, {
+      searchInp: searchInput,
+    });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'search threads');
+    return formatError(error, "search threads");
   }
 };
 
@@ -207,22 +227,22 @@ export const searchThreads = async (searchInput) => {
  * @returns {Promise<Object>} Response with filtered threads or error
  */
 export const filterThreads = async (filter) => {
-  const validFilters = ['MostShared', 'MostLiked'];
-  
+  const validFilters = ["MostShared", "MostLiked"];
+
   if (!filter || !validFilters.includes(filter)) {
     return {
       success: false,
-      error: `Invalid filter. Must be one of: ${validFilters.join(', ')}`,
+      error: `Invalid filter. Must be one of: ${validFilters.join(", ")}`,
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     const response = await Api.post(forumRoutes.threadFilter, { filter });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'filter threads');
+    return formatError(error, "filter threads");
   }
 };
 
@@ -232,27 +252,36 @@ export const filterThreads = async (filter) => {
  * @returns {Promise<Object>} Response with updated thread data or error
  */
 export const editThread = async (threadData) => {
-  const validation = validateFields(threadData, ['_id', 'title', 'content', 'authorId']);
+  const validation = validateFields(threadData, [
+    "_id",
+    "title",
+    "content",
+    "authorId",
+  ]);
   if (!validation.isValid) {
     return {
       success: false,
       error: validation.error,
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     // Ensure tags are properly formatted in the request body
     const requestData = {
       ...threadData,
-      tags: threadData.tags ? (Array.isArray(threadData.tags) ? threadData.tags : [threadData.tags]) : []
+      tags: threadData.tags
+        ? Array.isArray(threadData.tags)
+          ? threadData.tags
+          : [threadData.tags]
+        : [],
     };
-    
+
     const response = await Api.patch(forumRoutes.editThread, requestData);
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'edit thread');
+    return formatError(error, "edit thread");
   }
 };
 
@@ -266,17 +295,20 @@ export const upvoteThread = async (threadId, userId) => {
   if (!threadId || !userId) {
     return {
       success: false,
-      error: 'Thread ID and User ID are required',
+      error: "Thread ID and User ID are required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
-    const response = await Api.patch(forumRoutes.threadUpvote, { threadId, userId });
+    const response = await Api.patch(forumRoutes.threadUpvote, {
+      threadId,
+      userId,
+    });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'upvote thread');
+    return formatError(error, "upvote thread");
   }
 };
 
@@ -290,17 +322,20 @@ export const downvoteThread = async (threadId, userId) => {
   if (!threadId || !userId) {
     return {
       success: false,
-      error: 'Thread ID and User ID are required',
+      error: "Thread ID and User ID are required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
-    const response = await Api.patch(forumRoutes.threadDownvote, { threadId, userId });
+    const response = await Api.patch(forumRoutes.threadDownvote, {
+      threadId,
+      userId,
+    });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'downvote thread');
+    return formatError(error, "downvote thread");
   }
 };
 
@@ -313,17 +348,17 @@ export const shareThread = async (threadId) => {
   if (!threadId) {
     return {
       success: false,
-      error: 'Thread ID is required',
+      error: "Thread ID is required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     const response = await Api.patch(forumRoutes.threadShares, { threadId });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'share thread');
+    return formatError(error, "share thread");
   }
 };
 
@@ -337,21 +372,25 @@ export const shareThread = async (threadId) => {
  * @returns {Promise<Object>} Response with created comment data or error
  */
 export const addComment = async (commentData) => {
-  const validation = validateFields(commentData, ['threadId', 'authorId', 'content']);
+  const validation = validateFields(commentData, [
+    "threadId",
+    "authorId",
+    "content",
+  ]);
   if (!validation.isValid) {
     return {
       success: false,
       error: validation.error,
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     const response = await Api.post(forumRoutes.addComment, commentData);
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'add comment');
+    return formatError(error, "add comment");
   }
 };
 
@@ -361,21 +400,26 @@ export const addComment = async (commentData) => {
  * @returns {Promise<Object>} Response with updated comment data or error
  */
 export const editComment = async (commentData) => {
-  const validation = validateFields(commentData, ['_id', 'threadId', 'authorId', 'content']);
+  const validation = validateFields(commentData, [
+    "_id",
+    "threadId",
+    "authorId",
+    "content",
+  ]);
   if (!validation.isValid) {
     return {
       success: false,
       error: validation.error,
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     const response = await Api.patch(forumRoutes.editComment, commentData);
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'edit comment');
+    return formatError(error, "edit comment");
   }
 };
 
@@ -388,17 +432,17 @@ export const deleteComment = async (commentId) => {
   if (!commentId) {
     return {
       success: false,
-      error: 'Comment ID is required',
+      error: "Comment ID is required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
     const response = await Api.post(forumRoutes.deleteComment, { commentId });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'delete comment');
+    return formatError(error, "delete comment");
   }
 };
 
@@ -412,17 +456,20 @@ export const likeComment = async (commentId, userId) => {
   if (!commentId || !userId) {
     return {
       success: false,
-      error: 'Comment ID and User ID are required',
+      error: "Comment ID and User ID are required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
-    const response = await Api.patch(forumRoutes.commentLikes, { commentId, userId });
+    const response = await Api.patch(forumRoutes.commentLikes, {
+      commentId,
+      userId,
+    });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'like comment');
+    return formatError(error, "like comment");
   }
 };
 
@@ -441,7 +488,7 @@ export const fetchTags = async () => {
     const response = await Api.get(forumRoutes.fetchtags);
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'fetch tags');
+    return formatError(error, "fetch tags");
   }
 };
 
@@ -449,17 +496,20 @@ export const dislikeComment = async (commentId, userId) => {
   if (!commentId || !userId) {
     return {
       success: false,
-      error: 'Comment ID and User ID are required',
+      error: "Comment ID and User ID are required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
-    const response = await Api.patch(forumRoutes.commentDislikes, { commentId, userId });
+    const response = await Api.patch(forumRoutes.commentDislikes, {
+      commentId,
+      userId,
+    });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'dislike comment');
+    return formatError(error, "dislike comment");
   }
 };
 
@@ -474,17 +524,20 @@ export const addReply = async (commentId, userId, content) => {
   if (!commentId || !userId || !content) {
     return {
       success: false,
-      error: 'Comment ID, User ID, and content are required',
+      error: "Comment ID, User ID, and content are required",
       status: 400,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
-  
+
   try {
-    const response = await Api.patch(forumRoutes.realTimeReplies, { commentId, userId, content });
+    const response = await Api.patch(forumRoutes.realTimeReplies, {
+      commentId,
+      userId,
+      content,
+    });
     return formatResponse(response);
   } catch (error) {
-    return formatError(error, 'add reply');
+    return formatError(error, "add reply");
   }
 };
-  

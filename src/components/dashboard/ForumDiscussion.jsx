@@ -263,48 +263,23 @@ const ForumDiscussion = () => {
       // Parse tags safely
       let parsedTags = [];
       if (thread.tags?.length > 0) {
-        // Process each tag in the array
         parsedTags = thread.tags.flatMap((tagItem) => {
           if (typeof tagItem === "string") {
-            // Remove any leading/trailing spaces
-            const trimmedTag = tagItem.trim();
-
-            // Case 1: Tag is a JSON string array with escaped quotes
-            if (trimmedTag.includes('"')) {
-              try {
-                // Handle the case with spaces and escaped quotes
-                const cleanedTag = trimmedTag.replace(/^\s*\[|\]\s*$/g, "");
-                return cleanedTag
-                  .split(",")
-                  .map((t) => t.trim().replace(/^"|"$/g, ""));
-              } catch {
-                return [trimmedTag];
-              }
-            }
-            // Case 2: Tag is a plain JSON array
-            else if (trimmedTag.startsWith("[") && trimmedTag.endsWith("]")) {
-              try {
-                return JSON.parse(trimmedTag);
-              } catch {
-                return [trimmedTag];
-              }
-            }
-            // Case 3: Plain string tag
-            else {
-              return [trimmedTag];
+            // Try to parse as JSON array
+            try {
+              const parsed = JSON.parse(tagItem);
+              if (Array.isArray(parsed)) return parsed;
+              return [parsed];
+            } catch {
+              // Not a JSON array, return as single tag
+              return [tagItem.trim()];
             }
           } else if (Array.isArray(tagItem)) {
-            // If it's already an array, use it directly
             return tagItem;
           } else {
-            // If not a string or array, convert to string
             return [String(tagItem)];
           }
         });
-
-        // Debug the parsed tags
-        console.log("Original tags:", thread.tags);
-        console.log("Parsed tags:", parsedTags);
       }
 
       // Format time safely
@@ -1672,15 +1647,20 @@ const ForumDiscussion = () => {
             <div className="hidden md:block w-64 bg-white p-5 fixed right-0 h-screen overflow-y-auto">
               <h2 className="font-semibold mb-4 text-gray-800">Popular Tags</h2>
               <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSearchTerm(tag)}
-                    className="px-3 py-1 bg-gray-50 rounded-full text-sm cursor-pointer hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900"
-                  >
-                    {tag}
-                  </button>
-                ))}
+                {tags.map(
+                  (tag) => (
+                    console.log("Tag:", tag),
+                    (
+                      <button
+                        key={tag}
+                        onClick={() => setSearchTerm(tag)}
+                        className="px-3 py-1 bg-gray-50 rounded-full text-sm cursor-pointer hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900"
+                      >
+                        {tag}
+                      </button>
+                    )
+                  )
+                )}
               </div>
             </div>
           )}

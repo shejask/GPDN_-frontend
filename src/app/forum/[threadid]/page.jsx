@@ -274,7 +274,7 @@ const ThreadDetail = () => {
             </div>
           )}
           {/* Actions */}
-          <div className="flex items-center gap-4 text-gray-500 text-sm mb-4">
+          {/* <div className="flex items-center gap-4 text-gray-500 text-sm mb-4">
             <button
               // onClick={() => handleUpvote(post.id)}
               className="flex items-center gap-1 border border-gray-200 px-3 py-1 rounded-lg hover:bg-gray-50 transition-colors"
@@ -296,7 +296,7 @@ const ThreadDetail = () => {
               <ShareAltOutlined />
               Share · {post.shares || 0}
             </button>
-          </div>
+          </div> */}
           {/* Comments */}
           <div className="border-t border-gray-100 pt-4">
             <h1 className="mb-2">Comments</h1>

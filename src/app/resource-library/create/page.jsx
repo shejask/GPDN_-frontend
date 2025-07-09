@@ -711,15 +711,14 @@ function UploadResource() {
 
           {/* Category/Tags Field */}
           <div className="mb-8">
-            {" "}
-            {/* // modified line - increased margin */}
+       
             <label className="block text-gray-900 text-base font-semibold mb-3">
               Tags
             </label>{" "}
-            {/* // modified line */}
+            
             <div className="border-2 border-gray-200 rounded-lg p-4 bg-white">
               {" "}
-              {/* // modified line */}
+              
               <div className="flex flex-wrap gap-2 mb-4">
                 {" "}
                 {/* // modified line */}

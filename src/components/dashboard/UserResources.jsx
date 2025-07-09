@@ -80,19 +80,26 @@ const UserResources = () => {
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
-    tags: "",
+    tags: [],
     content: "",
     file: null,
   });
+
+  const [inputVisible, setInputVisible] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [resourceToView, setResourceToView] = useState(null);
   const [existingFile, setExistingFile] = useState(null);
   const richTextRef = React.useRef();
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     loadUserResources();
   }, [currentPage]);
+
+  const showInput = () => {
+    setInputVisible(true);
+  };
 
   const loadUserResources = async () => {
     try {
@@ -228,7 +235,14 @@ const UserResources = () => {
     setEditForm({
       title: resource.title,
       description: resource.description,
-      tags: (resource.tags || []).join(", "),
+      tags: Array.isArray(resource.tags)
+        ? resource.tags
+        : typeof resource.tags === "string"
+        ? resource.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [],
       content: resource.content || "",
       file: null,
     });
@@ -258,7 +272,7 @@ const UserResources = () => {
       formData.append("_id", resourceToEdit._id);
       formData.append("title", editForm.title);
       formData.append("description", editForm.description);
-      formData.append("tags", editForm.tags);
+      editForm.tags.forEach((tag) => formData.append("tags", tag));
       formData.append(
         "content",
         richTextRef.current?.getContent() || editForm.content
@@ -349,6 +363,14 @@ const UserResources = () => {
       default:
         return <FileOutlined style={{ fontSize: "32px", color: "#00A99D" }} />;
     }
+  };
+
+  const handleInputConfirm = () => {
+    if (inputValue && !editForm.includes(inputValue)) {
+      setTags([...editForm.tags, inputValue]);
+    }
+    setInputVisible(false);
+    setInputValue("");
   };
 
   const renderFilePreview = (resource) => {
@@ -622,7 +644,7 @@ const UserResources = () => {
                 <p className="text-gray-600  leading-relaxed line-clamp-2 md:w-4/5">
                   {resource.description}
                 </p>
-                <hr className=" mt-2"/>
+                <hr className=" mt-2" />
                 <p className="text-gray-600 mb-4 leading-relaxed mt-5 md:w-4/5">
                   <div
                     className="prose"
@@ -734,6 +756,7 @@ const UserResources = () => {
         okText="Save"
         confirmLoading={editLoading}
         width={700}
+        
       >
         <div className="flex flex-col gap-4">
           <Input
@@ -748,11 +771,118 @@ const UserResources = () => {
               handleEditFormChange("description", e.target.value)
             }
           />
-          <Input
+          {/* <Input
             placeholder="Tags (comma separated)"
             value={editForm.tags}
             onChange={(e) => handleEditFormChange("tags", e.target.value)}
-          />
+          /> */}
+
+          <div className="mb-8">
+            <label className="block text-gray-900 text-base font-semibold mb-3">
+              Tags
+            </label>
+            <div className="border-2 border-gray-200 rounded-lg p-4 bg-white">
+              <div className="flex flex-wrap gap-2 mb-4">
+                {editForm.tags.map((tag, idx) => (
+                  <div
+                    key={tag + idx}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium"
+                  >
+                    <span>{tag}</span>
+                    <button
+                      onClick={() =>
+                        setEditForm((prev) => ({
+                          ...prev,
+                          tags: prev.tags.filter((t, i) => i !== idx),
+                        }))
+                      }
+                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {inputVisible ? (
+                  <Input
+                    type="text"
+                    size="small"
+                    style={{
+                      width: 120,
+                      height: 32,
+                      fontSize: "14px",
+                    }}
+                    className="rounded-full border-gray-300 focus:border-[#00A99D] focus:ring-0"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onBlur={() => {
+                      if (
+                        inputValue &&
+                        !editForm.tags.includes(inputValue.trim())
+                      ) {
+                        setEditForm((prev) => ({
+                          ...prev,
+                          tags: [...prev.tags, inputValue.trim()],
+                        }));
+                      }
+                      setInputVisible(false);
+                      setInputValue("");
+                    }}
+                    onPressEnter={() => {
+                      if (
+                        inputValue &&
+                        !editForm.tags.includes(inputValue.trim())
+                      ) {
+                        setEditForm((prev) => ({
+                          ...prev,
+                          tags: [...prev.tags, inputValue.trim()],
+                        }));
+                      }
+                      setInputVisible(false);
+                      setInputValue("");
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    onClick={showInput}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    New Tag
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-3 pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => setEditForm((prev) => ({ ...prev, tags: [] }))}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block mb-1 text-sm">Content</label>
             <RichTextEditor
@@ -765,7 +895,15 @@ const UserResources = () => {
             <label className="block mb-1 text-sm">File</label>
             {existingFile && !editForm.file && (
               <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs text-gray-500">{existingFile}</span>
+                <span className="text-xs text-gray-500">
+                  <Image
+                    src={existingFile}
+                    width={100}
+                    height={100}
+                    alt="image"
+                    className=" rounded-xl"
+                  />
+                </span>
                 <Button
                   size="small"
                   danger

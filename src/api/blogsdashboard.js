@@ -269,10 +269,9 @@ export const filterBlogsByCategory = async (category) => {
 export const getCategories = async () => {
   try {
     // This endpoint will return all available categories
-    const response = await Api.post(blogRoute.filterNewsAndBlogs, {
-      filter: "Category",
-      date: ""
-    });
+    const response = await Api.get(blogRoute.filterNewsAndBlogs);
+    console.log('Categories response:', response);
+    
     return {
       success: true,
       data: response.data

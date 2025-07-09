@@ -12,6 +12,8 @@ import {
   FaEye,
   FaShare,
   FaRegEdit,
+  FaTimes,
+  FaPlus,
 } from "react-icons/fa";
 import { IoSearchOutline } from "react-icons/io5";
 import { Modal, Spin, Input, message, Button, Tag } from "antd";
@@ -32,7 +34,14 @@ const TAGS = [
   "Education",
   "Research",
   "Policy",
+  "AI/ML",
+  "Finance",
+  "Healthcare",
+  "Technology",
+  "Innovation",
+  "Community",
 ];
+
 const SIDEBAR_MENUS = [
   { menu: "Dashboard", icon: "📊", link: "/dashboard" },
   { menu: "My Discussions", icon: "💬", link: "/dashboard/discussions" },
@@ -59,12 +68,16 @@ const UserDiscussions = () => {
   const [editForm, setEditForm] = useState({
     title: "",
     content: "",
-    tags: "",
+    tags: [], // Changed from string to array
     file: null,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [discussionToView, setDiscussionToView] = useState(null);
+
+  // Tag management state
+  const [tagInput, setTagInput] = useState("");
+  const [suggestedTags, setSuggestedTags] = useState([]);
 
   // For edit modal rich text
   const [existingFile, setExistingFile] = useState(null);
@@ -74,23 +87,30 @@ const UserDiscussions = () => {
   const parseThreadTags = useCallback((tags) => {
     if (!tags || tags.length === 0) return [];
 
-    try {
-      const tagItem = tags[0];
-      if (typeof tagItem === "string") {
-        if (tagItem.startsWith('["') && tagItem.endsWith('"]')) {
-          return JSON.parse(tagItem);
-        } else if (tagItem.startsWith("[") && tagItem.endsWith("]")) {
-          return JSON.parse(tagItem);
-        } else {
-          return [tagItem];
-        }
-      } else {
-        return Array.isArray(tags) ? tags : [];
-      }
-    } catch (parseError) {
-      console.error("Error parsing tags:", parseError);
-      return Array.isArray(tags) ? tags : [];
+    // If tags is already an array of strings, return as is
+    if (Array.isArray(tags) && tags.every((tag) => typeof tag === "string")) {
+      return tags;
     }
+
+    // If tags is a single stringified array, parse it
+    if (
+      typeof tags[0] === "string" &&
+      tags[0].startsWith("[") &&
+      tags[0].endsWith("]")
+    ) {
+      try {
+        const parsed = JSON.parse(tags[0]);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    // Otherwise, fallback to previous logic
+    if (typeof tags[0] === "string") {
+      return [tags[0]];
+    }
+    return [];
   }, []);
 
   // Helper function to strip HTML tags
@@ -104,6 +124,46 @@ const UserDiscussions = () => {
       return html;
     }
   }, []);
+
+  // Tag management functions
+  const handleTagInputChange = (value) => {
+    setTagInput(value);
+    if (value.trim()) {
+      const filtered = TAGS.filter(
+        (tag) =>
+          tag.toLowerCase().includes(value.toLowerCase()) &&
+          !editForm.tags.includes(tag)
+      );
+      setSuggestedTags(filtered);
+    } else {
+      setSuggestedTags([]);
+    }
+  };
+
+  const addTag = (tag) => {
+    if (!editForm.tags.includes(tag) && tag.trim()) {
+      setEditForm((prev) => ({
+        ...prev,
+        tags: [...prev.tags, tag.trim()],
+      }));
+      setTagInput("");
+      setSuggestedTags([]);
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setEditForm((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
+
+  const handleTagInputKeyPress = (e) => {
+    if (e.key === "Enter" && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput.trim());
+    }
+  };
 
   // Data loading
   const loadUserDiscussions = useCallback(async () => {
@@ -225,10 +285,12 @@ const UserDiscussions = () => {
     setEditForm({
       title: discussion.title,
       content: discussion.content,
-      tags: (discussion.tags || []).join(", "),
+      tags: discussion.tags || [], // Keep as array
       file: null,
     });
     setExistingFile(discussion.thumbnail || null);
+    setTagInput(""); // Reset tag input
+    setSuggestedTags([]); // Reset suggestions
     setEditModalVisible(true);
     setTimeout(() => {
       if (richTextRef.current && discussion.content) {
@@ -251,12 +313,14 @@ const UserDiscussions = () => {
         "content",
         richTextRef.current?.getContent() || editForm.content
       );
-      formData.append("tags", editForm.tags);
+
+      // Send tags as JSON string array
+      formData.append("tags", JSON.stringify(editForm.tags));
 
       if (editForm.file) {
-        formData.append("file", editForm.file); // New file selected
+        formData.append("file", editForm.file);
       } else if (existingFile) {
-        formData.append("existingFile", existingFile); // Send existing image as a fallback
+        formData.append("existingFile", existingFile);
       }
 
       const response = await fetch(
@@ -273,6 +337,8 @@ const UserDiscussions = () => {
         setEditModalVisible(false);
         setDiscussionToEdit(null);
         setExistingFile(null);
+        setTagInput("");
+        setSuggestedTags([]);
         loadUserDiscussions();
       } else {
         throw new Error(data.message || "Failed to update discussion");
@@ -414,7 +480,7 @@ const UserDiscussions = () => {
 
       {/* Content */}
       <div className="mb-4">
-        <p className="text-gray-700 leading-relaxed mb-4">
+        <p className="text-gray-700 leading-relaxed mb-4 md:w-4/5">
           {discussion.content}
         </p>
       </div>
@@ -436,7 +502,7 @@ const UserDiscussions = () => {
       {/* Thumbnail */}
       {discussion.thumbnail && (
         <div className="mb-4">
-          <div className="rounded-lg overflow-hidden ">
+          <div className="rounded-lg overflow-hidden">
             <img
               src={discussion.thumbnail}
               alt={discussion.title}
@@ -452,8 +518,8 @@ const UserDiscussions = () => {
 
       {/* Action Buttons */}
       <div className="flex w-full items-center justify-between pt-4 border-t border-gray-100">
-        <div clas sName="flex items-center gap-3">
-          <div className=" flex items-center gap-5">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-5">
             <button className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors">
               <FaHeart className="text-lg" />
               <span className="text-sm font-medium">{discussion.upvotes}</span>
@@ -474,9 +540,6 @@ const UserDiscussions = () => {
             className="flex items-center gap-2 text-gray-600 hover:text-[#00A99D] transition-colors"
           >
             <FaEye className="text-lg" />
-            {/* <span className="text-sm text-gray-500">
-              • {discussion.upvotes}
-            </span> */}
           </button>
 
           <button
@@ -484,11 +547,10 @@ const UserDiscussions = () => {
             className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
           >
             <MdEdit className="text-lg" />
-            {/* <span className="text-sm font-medium">{discussion.comments}</span> */}
           </button>
           <button
             onClick={() => handleDeleteClick(discussion)}
-            className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors"
           >
             <FaTrashCan className="text-lg text-red-600" />
           </button>
@@ -526,6 +588,93 @@ const UserDiscussions = () => {
             {tag}
           </button>
         ))}
+      </div>
+    </div>
+  );
+
+  // Tag input component for edit modal
+  const renderTagInput = () => (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">Tags</label>
+
+      {/* Selected Tags Display */}
+      {editForm.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {editForm.tags.map((tag, index) => (
+            <span
+              key={index}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-[#00A99D] text-white rounded-full text-sm"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="ml-1 hover:text-red-200 transition-colors"
+              >
+                <FaTimes className="text-xs" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Tag Input Field */}
+      <div className="relative">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Add a tag..."
+            value={tagInput}
+            onChange={(e) => handleTagInputChange(e.target.value)}
+            onKeyPress={handleTagInputKeyPress}
+            className="flex-1"
+          />
+          <Button
+            type="primary"
+            icon={<FaPlus />}
+            onClick={() => addTag(tagInput)}
+            disabled={
+              !tagInput.trim() || editForm.tags.includes(tagInput.trim())
+            }
+            className="bg-[#00A99D] border-[#00A99D] hover:bg-[#008F84]"
+          >
+            Add
+          </Button>
+        </div>
+
+        {/* Suggested Tags */}
+        {suggestedTags.length > 0 && (
+          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1 max-h-48 overflow-y-auto">
+            {suggestedTags.map((tag, index) => (
+              <button
+                key={index}
+                type="button"
+                className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b border-gray-100 last:border-b-0"
+                onClick={() => addTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Popular Tags */}
+      <div className="mt-2">
+        <p className="text-xs text-gray-500 mb-1">Popular tags:</p>
+        <div className="flex flex-wrap gap-1">
+          {TAGS.filter((tag) => !editForm.tags.includes(tag))
+            .slice(0, 8)
+            .map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => addTag(tag)}
+                className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 transition-colors"
+              >
+                + {tag}
+              </button>
+            ))}
+        </div>
       </div>
     </div>
   );
@@ -593,45 +742,61 @@ const UserDiscussions = () => {
         title="Edit Discussion"
         open={editModalVisible}
         onOk={handleEditSubmit}
-        onCancel={() => setEditModalVisible(false)}
-        okText="Save"
+        onCancel={() => {
+          setEditModalVisible(false);
+          setTagInput("");
+          setSuggestedTags([]);
+        }}
+        okText="Save Changes"
         confirmLoading={editLoading}
-        width={700}
+        width={800}
+        className="edit-modal"
       >
         <div className="flex flex-col gap-4">
-          <Input
-            placeholder="Title"
-            value={editForm.title}
-            onChange={(e) => handleEditFormChange("title", e.target.value)}
-          />
           <div>
-            <label className="block mb-1 text-sm">Content</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Title
+            </label>
+            <Input
+              placeholder="Discussion title..."
+              value={editForm.title}
+              onChange={(e) => handleEditFormChange("title", e.target.value)}
+              size="large"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Content
+            </label>
             <RichTextEditor
               ref={richTextRef}
               initialContent={editForm.content}
               onChange={(value) => handleEditFormChange("content", value)}
             />
           </div>
-          <Input
-            placeholder="Tags (comma separated)"
-            value={editForm.tags}
-            onChange={(e) => handleEditFormChange("tags", e.target.value)}
-          />
+
+          {/* Updated Tag Input */}
+          {renderTagInput()}
+
           <div>
-            <label className="block mb-1 text-sm">Image</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Image
+            </label>
             {existingFile && !editForm.file && (
               <div className="mb-2 flex items-center gap-2">
                 <img
                   src={existingFile}
                   alt="Current"
-                  className="h-16 rounded"
+                  className="h-16 w-16 object-cover rounded border"
                 />
                 <Button
                   size="small"
                   danger
                   onClick={() => setExistingFile(null)}
+                  icon={<FaTimes />}
                 >
-                  Remove
+                  Remove Current Image
                 </Button>
               </div>
             )}
@@ -639,6 +804,7 @@ const UserDiscussions = () => {
               type="file"
               accept="image/*"
               onChange={(e) => handleEditFormChange("file", e.target.files[0])}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#00A99D] file:text-white hover:file:bg-[#008F84]"
             />
           </div>
         </div>
@@ -650,7 +816,7 @@ const UserDiscussions = () => {
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
         footer={null}
-        width={700}
+        width={800}
       >
         {discussionToView && (
           <div>
@@ -659,11 +825,11 @@ const UserDiscussions = () => {
                 src={discussionToView.thumbnail}
                 alt="Discussion"
                 className="mb-4 w-full rounded"
-                style={{ maxHeight: 250, objectFit: "contain" }}
+                style={{ maxHeight: 300, objectFit: "contain" }}
               />
             )}
             <div
-              className="prose"
+              className="prose max-w-none"
               dangerouslySetInnerHTML={{ __html: discussionToView.content }}
             />
             <div className="mt-4 flex flex-wrap gap-2">
