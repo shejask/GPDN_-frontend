@@ -1,10 +1,11 @@
-import AccountActivation from '@/components/auth/AccountActivation';
-
-export const metadata = {
-  title: 'Account Activation | GPDN',
-  description: 'Activate your GPDN account to access all features',
-};
+"use client";
+import AccountActivation from "@/components/auth/AccountActivation";
+import { Suspense } from "react";
 
 export default function ActivateAccountPage() {
-  return <AccountActivation />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AccountActivation />
+    </Suspense>
+  );
 }
