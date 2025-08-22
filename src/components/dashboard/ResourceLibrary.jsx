@@ -1176,7 +1176,6 @@ const ResourceLibrary = () => {
               <div className="space-y-2">
                 {resource.files
                   .filter((file) => !isImageFile(file))
-                  .slice(0, 1)
                   .map((file, index) => {
                     const fileName =
                       file.split("/").pop() ||

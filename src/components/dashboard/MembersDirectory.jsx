@@ -22,7 +22,7 @@ import { fetchDoctors, searchDoctors, filterDoctors } from "../../api/Members";
 
 // Logo import
 import logo from "../../app/assets/registation/logo.png";
-import { usePathname } from "next/navigation"; // Add this import
+import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import Sidebar from "../Sidebar";
 
@@ -65,15 +65,163 @@ const COUNTRY_DATA = {
   "United Arab Emirates": "AE",
   "Saudi Arabia": "SA",
   "South Korea": "KR",
+  Netherlands: "NL",
+  Belgium: "BE",
+  Switzerland: "CH",
+  Austria: "AT",
+  Sweden: "SE",
+  Norway: "NO",
+  Denmark: "DK",
+  Finland: "FI",
+  Ireland: "IE",
+  Portugal: "PT",
+  Greece: "GR",
+  Turkey: "TR",
+  Israel: "IL",
+  Egypt: "EG",
+  Nigeria: "NG",
+  Kenya: "KE",
+  Ghana: "GH",
+  Morocco: "MA",
+  Ethiopia: "ET",
+  Tanzania: "TZ",
+  Uganda: "UG",
+  Zimbabwe: "ZW",
+  Botswana: "BW",
+  Namibia: "NA",
+  Zambia: "ZM",
+  Malawi: "MW",
+  Rwanda: "RW",
+  Senegal: "SN",
+  "Ivory Coast": "CI",
+  Cameroon: "CM",
+  Tunisia: "TN",
+  Algeria: "DZ",
+  Libya: "LY",
+  Sudan: "SD",
+  Jordan: "JO",
+  Lebanon: "LB",
+  Kuwait: "KW",
+  Qatar: "QA",
+  Bahrain: "BH",
+  Oman: "OM",
+  Yemen: "YE",
+  Iraq: "IQ",
+  Iran: "IR",
+  Afghanistan: "AF",
+  Pakistan: "PK",
+  Bangladesh: "BD",
+  "Sri Lanka": "LK",
+  Nepal: "NP",
+  Bhutan: "BT",
+  Myanmar: "MM",
+  Thailand: "TH",
+  Vietnam: "VN",
+  Cambodia: "KH",
+  Laos: "LA",
+  Malaysia: "MY",
+  Indonesia: "ID",
+  Philippines: "PH",
+  Brunei: "BN",
+  "East Timor": "TL",
+  "Papua New Guinea": "PG",
+  Fiji: "FJ",
+  "Solomon Islands": "SB",
+  Vanuatu: "VU",
+  Samoa: "WS",
+  Tonga: "TO",
+  Mongolia: "MN",
+  Kazakhstan: "KZ",
+  Uzbekistan: "UZ",
+  Kyrgyzstan: "KG",
+  Tajikistan: "TJ",
+  Turkmenistan: "TM",
+  Georgia: "GE",
+  Armenia: "AM",
+  Azerbaijan: "AZ",
+  Belarus: "BY",
+  Ukraine: "UA",
+  Moldova: "MD",
+  Romania: "RO",
+  Bulgaria: "BG",
+  Serbia: "RS",
+  Croatia: "HR",
+  "Bosnia and Herzegovina": "BA",
+  Montenegro: "ME",
+  "North Macedonia": "MK",
+  Albania: "AL",
+  Kosovo: "XK",
+  Slovenia: "SI",
+  Slovakia: "SK",
+  "Czech Republic": "CZ",
+  Poland: "PL",
+  Hungary: "HU",
+  Lithuania: "LT",
+  Latvia: "LV",
+  Estonia: "EE",
+  Iceland: "IS",
+  Malta: "MT",
+  Cyprus: "CY",
+  Luxembourg: "LU",
+  Monaco: "MC",
+  Andorra: "AD",
+  "San Marino": "SM",
+  "Vatican City": "VA",
+  Liechtenstein: "LI",
+  Argentina: "AR",
+  Chile: "CL",
+  Colombia: "CO",
+  Peru: "PE",
+  Venezuela: "VE",
+  Ecuador: "EC",
+  Bolivia: "BO",
+  Paraguay: "PY",
+  Uruguay: "UY",
+  Guyana: "GY",
+  Suriname: "SR",
+  "French Guiana": "GF",
+  "Costa Rica": "CR",
+  Panama: "PA",
+  Nicaragua: "NI",
+  Honduras: "HN",
+  "El Salvador": "SV",
+  Guatemala: "GT",
+  Belize: "BZ",
+  Cuba: "CU",
+  Jamaica: "JM",
+  Haiti: "HT",
+  "Dominican Republic": "DO",
+  "Trinidad and Tobago": "TT",
+  Barbados: "BB",
+  Bahamas: "BS",
+  Grenada: "GD",
+  "Saint Lucia": "LC",
+  "Saint Vincent and the Grenadines": "VC",
+  Dominica: "DM",
+  "Antigua and Barbuda": "AG",
+  "Saint Kitts and Nevis": "KN",
 };
 
 const FILTER_OPTIONS = {
   specialization: [
-    "Pain Management",
-    "Pediatric Care",
-    "Geriatric Care",
+    "Pain management",
+    "Symptom control",
+    "End-of-life care",
+    "Family support",
+    "Psychological support",
+    "Spiritual care",
+    "Bereavement counseling",
+    "Geriatric care",
+    "Pediatric care",
     "Oncology",
-    "Hospice Care",
+    "Respiratory care",
+    "Neurological care",
+    "Cardiac care",
+    "Palliative nursing",
+    "Social work",
+    "Research",
+    "Education",
+    "Policy development",
   ],
   expertise: [
     "Advanced Pain Management",
@@ -135,6 +283,95 @@ const buildFilterPayload = (filters) => {
   return payload;
 };
 
+// Frontend filtering function for countries
+// Frontend filtering function for countries and specializations
+const applyFrontendFilters = (members, filters) => {
+  let filteredMembers = [...members];
+
+  // Apply country filter on frontend
+  if (filters.country) {
+    filteredMembers = filteredMembers.filter(
+      (member) => member.countryOfPractice === filters.country
+    );
+  }
+
+  // Apply specialization filter on frontend (improved logic)
+  if (filters.specialization) {
+    filteredMembers = filteredMembers.filter((member) => {
+      // Get member fields to search in
+      const memberSpecialInterests = (
+        member.specialInterestsInPalliativeCare || ""
+      )
+        .toLowerCase()
+        .trim();
+      const memberQualification = (member.medicalQualification || "")
+        .toLowerCase()
+        .trim();
+      const memberAssociations = (member.affiliatedPalliativeAssociations || "")
+        .toLowerCase()
+        .trim();
+
+      const searchTerm = filters.specialization.toLowerCase().trim();
+
+      // Debug logging
+      console.log("=== SPECIALIZATION FILTER DEBUG ===");
+      console.log("Filtering member:", member.fullName);
+      console.log("Search term:", `"${searchTerm}"`);
+      console.log("Member special interests:", `"${memberSpecialInterests}"`);
+      console.log("Member qualification:", `"${memberQualification}"`);
+      console.log("Member associations:", `"${memberAssociations}"`);
+
+      // Simple direct matching first
+      const specialInterestsMatch = memberSpecialInterests.includes(searchTerm);
+      const qualificationMatch = memberQualification.includes(searchTerm);
+      const associationsMatch = memberAssociations.includes(searchTerm);
+
+      // Also try individual word matching for more flexibility
+      const searchWords = searchTerm
+        .split(/\s+/)
+        .filter((word) => word.length > 2); // Only words longer than 2 chars
+      const wordMatches =
+        searchWords.length > 0
+          ? searchWords.every((word) => {
+              const wordFound =
+                memberSpecialInterests.includes(word) ||
+                memberQualification.includes(word) ||
+                memberAssociations.includes(word);
+              console.log(`Word "${word}" found:`, wordFound);
+              return wordFound;
+            })
+          : false;
+
+      const finalMatch =
+        specialInterestsMatch ||
+        qualificationMatch ||
+        associationsMatch ||
+        wordMatches;
+
+      console.log("Special interests match:", specialInterestsMatch);
+      console.log("Qualification match:", qualificationMatch);
+      console.log("Associations match:", associationsMatch);
+      console.log("Word matches:", wordMatches);
+      console.log("FINAL RESULT:", finalMatch);
+      console.log("================================");
+
+      return finalMatch;
+    });
+  }
+
+  // Apply expertise filter on frontend (fallback)
+  if (filters.expertise) {
+    filteredMembers = filteredMembers.filter((member) => {
+      const memberExpertise = member.expertise || member.areasOfExpertise || "";
+      return memberExpertise
+        .toLowerCase()
+        .includes(filters.expertise.toLowerCase());
+    });
+  }
+
+  return filteredMembers;
+};
+
 // Main component
 const MembersDirectory = () => {
   // State management
@@ -144,6 +381,7 @@ const MembersDirectory = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [error, setError] = useState(null);
+  const [useFrontendFiltering, setUseFrontendFiltering] = useState(false);
 
   // Filter states
   const [selectedFilters, setSelectedFilters] = useState({
@@ -152,12 +390,17 @@ const MembersDirectory = () => {
     expertise: "",
   });
 
-  const pathname = usePathname(); // Add this line
+  const pathname = usePathname();
 
   // UI states
   const [showFilter, setShowFilter] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
+  const [showSpecializationMenu, setShowSpecializationMenu] = useState(false);
+  const [showExpertiseMenu, setShowExpertiseMenu] = useState(false);
   const [countrySearchInput, setCountrySearchInput] = useState("");
+  const [specializationSearchInput, setSpecializationSearchInput] =
+    useState("");
+  const [expertiseSearchInput, setExpertiseSearchInput] = useState("");
 
   const debouncedSearchTerm = useDebounce(searchInput, DEBOUNCE_DELAY);
 
@@ -187,7 +430,16 @@ const MembersDirectory = () => {
   const handleSearch = useCallback(
     async (searchTerm) => {
       if (!searchTerm.trim()) {
-        setMembers(allMembers);
+        // If no search term, apply current filters or show all members
+        if (Object.values(selectedFilters).some(Boolean)) {
+          const filteredMembers = applyFrontendFilters(
+            allMembers,
+            selectedFilters
+          );
+          setMembers(filteredMembers);
+        } else {
+          setMembers(allMembers);
+        }
         return;
       }
 
@@ -197,7 +449,15 @@ const MembersDirectory = () => {
 
         const response = await searchDoctors(searchTerm.trim());
         const searchResults = response?.data?.data || [];
-        const approvedMembers = filterApprovedMembers(searchResults);
+        let approvedMembers = filterApprovedMembers(searchResults);
+
+        // Apply frontend filters to search results if any filters are active
+        if (Object.values(selectedFilters).some(Boolean)) {
+          approvedMembers = applyFrontendFilters(
+            approvedMembers,
+            selectedFilters
+          );
+        }
 
         setMembers(approvedMembers);
       } catch (err) {
@@ -208,10 +468,10 @@ const MembersDirectory = () => {
         setSearchLoading(false);
       }
     },
-    [allMembers]
+    [allMembers, selectedFilters]
   );
 
-  // Handle filters
+  // Handle filters with frontend fallback
   const handleFilter = useCallback(
     async (filterType, value) => {
       const newFilters = { ...selectedFilters, [filterType]: value };
@@ -220,6 +480,8 @@ const MembersDirectory = () => {
       // Close filter menus
       setShowFilter(false);
       setShowCountryMenu(false);
+      setShowSpecializationMenu(false);
+      setShowExpertiseMenu(false);
       setCountrySearchInput("");
 
       try {
@@ -231,24 +493,88 @@ const MembersDirectory = () => {
         );
 
         if (activeFilters.length === 0) {
-          setMembers(allMembers);
+          // If no filters, apply search if active, otherwise show all
+          if (searchInput.trim()) {
+            await handleSearch(searchInput.trim());
+          } else {
+            setMembers(allMembers);
+          }
+          setLoading(false);
           return;
         }
 
-        const filterPayload = buildFilterPayload(newFilters);
-        const response = await filterDoctors(filterPayload);
-        const filteredResults = response?.data?.data || [];
+        // Try API filtering first, with fallback to frontend filtering
+        let useAPI = true;
+        let filteredMembers = [];
 
-        setMembers(filteredResults);
+        // For country filter, always use frontend filtering as it's more reliable
+        if (filterType === "country" || useFrontendFiltering) {
+          useAPI = false;
+        }
+
+        if (useAPI && !useFrontendFiltering) {
+          try {
+            const filterPayload = buildFilterPayload(newFilters);
+            const response = await filterDoctors(filterPayload);
+            filteredMembers = response?.data?.data || [];
+
+            // If API returns empty results but we have members, fall back to frontend filtering
+            if (filteredMembers.length === 0 && allMembers.length > 0) {
+              console.warn(
+                "API filtering returned no results, falling back to frontend filtering"
+              );
+              setUseFrontendFiltering(true);
+              useAPI = false;
+            }
+          } catch (apiError) {
+            console.warn(
+              "API filtering failed, using frontend filtering:",
+              apiError
+            );
+            setUseFrontendFiltering(true);
+            useAPI = false;
+          }
+        }
+
+        if (!useAPI || useFrontendFiltering) {
+          // Use frontend filtering
+          let baseMembers = allMembers;
+
+          // If there's a search term, first get search results
+          if (searchInput.trim()) {
+            try {
+              const searchResponse = await searchDoctors(searchInput.trim());
+              const searchResults = searchResponse?.data?.data || [];
+              baseMembers = filterApprovedMembers(searchResults);
+            } catch (searchError) {
+              console.warn("Search failed during filtering, using all members");
+            }
+          }
+
+          filteredMembers = applyFrontendFilters(baseMembers, newFilters);
+        }
+
+        setMembers(filteredMembers);
       } catch (err) {
         console.error("Error filtering doctors:", err);
         setError("Filter failed. Please try again.");
-        setMembers([]);
+
+        // Fallback to frontend filtering
+        const baseMembers = searchInput.trim() ? members : allMembers;
+        const filteredMembers = applyFrontendFilters(baseMembers, newFilters);
+        setMembers(filteredMembers);
       } finally {
         setLoading(false);
       }
     },
-    [selectedFilters, allMembers]
+    [
+      selectedFilters,
+      allMembers,
+      searchInput,
+      useFrontendFiltering,
+      members,
+      handleSearch,
+    ]
   );
 
   // Clear all filters
@@ -261,6 +587,7 @@ const MembersDirectory = () => {
     setSearchInput("");
     setCountrySearchInput("");
     setError(null);
+    setUseFrontendFiltering(false);
     setMembers(allMembers);
   }, [allMembers]);
 
@@ -276,18 +603,54 @@ const MembersDirectory = () => {
   const handleFilterClick = useCallback(() => {
     setShowFilter(!showFilter);
     setShowCountryMenu(false);
+    setShowSpecializationMenu(false);
+    setShowExpertiseMenu(false);
     setCountrySearchInput("");
+    setSpecializationSearchInput("");
+    setExpertiseSearchInput("");
   }, [showFilter]);
 
   const handleCountryClick = useCallback(() => {
     setShowCountryMenu(true);
     setShowFilter(false);
+    setShowSpecializationMenu(false);
+    setShowExpertiseMenu(false);
+  }, []);
+
+  const handleSpecializationClick = useCallback(() => {
+    setShowSpecializationMenu(true);
+    setShowFilter(false);
+    setShowCountryMenu(false);
+    setShowExpertiseMenu(false);
+  }, []);
+
+  const handleExpertiseClick = useCallback(() => {
+    setShowExpertiseMenu(true);
+    setShowFilter(false);
+    setShowCountryMenu(false);
+    setShowSpecializationMenu(false);
   }, []);
 
   const handleBackClick = useCallback(() => {
     setShowCountryMenu(false);
     setShowFilter(true);
+    setShowSpecializationMenu(false);
+    setShowExpertiseMenu(false);
     setCountrySearchInput("");
+  }, []);
+
+  const handleSpecializationBackClick = useCallback(() => {
+    setShowSpecializationMenu(false);
+    setShowFilter(true);
+    setShowCountryMenu(false);
+    setShowExpertiseMenu(false);
+  }, []);
+
+  const handleExpertiseBackClick = useCallback(() => {
+    setShowExpertiseMenu(false);
+    setShowFilter(true);
+    setShowCountryMenu(false);
+    setShowSpecializationMenu(false);
   }, []);
 
   // Effects
@@ -296,12 +659,23 @@ const MembersDirectory = () => {
   }, [loadDoctors]);
 
   useEffect(() => {
+    if (debouncedSearchTerm !== searchInput) return; // Wait for debounce
+
     if (debouncedSearchTerm) {
       handleSearch(debouncedSearchTerm);
     } else if (debouncedSearchTerm === "") {
-      setMembers(allMembers);
+      // When search is cleared, reapply current filters or show all
+      if (Object.values(selectedFilters).some(Boolean)) {
+        const filteredMembers = applyFrontendFilters(
+          allMembers,
+          selectedFilters
+        );
+        setMembers(filteredMembers);
+      } else {
+        setMembers(allMembers);
+      }
     }
-  }, [debouncedSearchTerm, handleSearch, allMembers]);
+  }, [debouncedSearchTerm, searchInput]);
 
   // Memoized values
   const filteredCountries = useMemo(() => {
@@ -330,6 +704,7 @@ const MembersDirectory = () => {
   const handleMobileMenuToggle = () => {
     setMobileMenuOpen((prev) => !prev);
   };
+
   // Render helpers
   const renderSidebar = () => (
     <Sidebar
@@ -345,6 +720,11 @@ const MembersDirectory = () => {
         <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
           <div className="p-3 border-b border-gray-100">
             <h3 className="font-medium">Add Filters</h3>
+            {useFrontendFiltering && (
+              <div className="text-xs text-blue-600 mt-1">
+                Using enhanced filtering
+              </div>
+            )}
           </div>
 
           <div className="py-1">
@@ -365,60 +745,38 @@ const MembersDirectory = () => {
             </button>
 
             {/* Specialization Filter */}
-            <div className="relative group">
-              <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span>Specialization</span>
-                  {selectedFilters.specialization && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                      {selectedFilters.specialization}
-                    </span>
-                  )}
-                </div>
-                <span>›</span>
-              </button>
-              <div className="absolute left-full top-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 hidden group-hover:block z-30">
-                <div className="p-2">
-                  {FILTER_OPTIONS.specialization.map((spec) => (
-                    <button
-                      key={spec}
-                      onClick={() => handleFilter("specialization", spec)}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 rounded text-sm"
-                    >
-                      {spec}
-                    </button>
-                  ))}
-                </div>
+            <button
+              onClick={handleSpecializationClick}
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center"
+            >
+              <div className="flex items-center gap-2">
+                <span>Specialization</span>
+                {selectedFilters.specialization && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {selectedFilters.specialization.length > 15
+                      ? selectedFilters.specialization.substring(0, 15) + "..."
+                      : selectedFilters.specialization}
+                  </span>
+                )}
               </div>
-            </div>
+              <span>›</span>
+            </button>
 
             {/* Expertise Filter */}
-            <div className="relative group">
-              <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span>Expertise</span>
-                  {selectedFilters.expertise && (
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                      {selectedFilters.expertise}
-                    </span>
-                  )}
-                </div>
-                <span>›</span>
-              </button>
-              <div className="absolute left-full top-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 hidden group-hover:block z-30">
-                <div className="p-2">
-                  {FILTER_OPTIONS.expertise.map((exp) => (
-                    <button
-                      key={exp}
-                      onClick={() => handleFilter("expertise", exp)}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 rounded text-sm"
-                    >
-                      {exp}
-                    </button>
-                  ))}
-                </div>
+            <button
+              onClick={handleExpertiseClick}
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center"
+            >
+              <div className="flex items-center gap-2">
+                <span>Expertise</span>
+                {selectedFilters.expertise && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {selectedFilters.expertise}
+                  </span>
+                )}
               </div>
-            </div>
+              <span>›</span>
+            </button>
           </div>
 
           {hasActiveFilters && (
@@ -485,6 +843,110 @@ const MembersDirectory = () => {
           </div>
         </div>
       )}
+
+      {/* Specialization Submenu */}
+      {showSpecializationMenu && (
+        <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
+          <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+            <button
+              onClick={handleSpecializationBackClick}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ‹
+            </button>
+            <h3 className="font-medium">Specialization</h3>
+          </div>
+
+          <div className="p-2">
+            <Input
+              placeholder="Search specializations"
+              className="mb-2"
+              value={specializationSearchInput}
+              onChange={(e) => setSpecializationSearchInput(e.target.value)}
+              prefix={<IoSearchOutline className="text-gray-400" />}
+            />
+
+            <div className="py-1 max-h-64 overflow-y-auto">
+              {FILTER_OPTIONS.specialization.filter((spec) =>
+                spec
+                  .toLowerCase()
+                  .includes(specializationSearchInput.toLowerCase())
+              ).length > 0 ? (
+                FILTER_OPTIONS.specialization
+                  .filter((spec) =>
+                    spec
+                      .toLowerCase()
+                      .includes(specializationSearchInput.toLowerCase())
+                  )
+                  .map((spec) => (
+                    <button
+                      key={spec}
+                      onClick={() => handleFilter("specialization", spec)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 rounded text-sm"
+                    >
+                      {spec}
+                    </button>
+                  ))
+              ) : (
+                <div className="text-center py-2 text-gray-500">
+                  No specializations found
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expertise Submenu */}
+      {showExpertiseMenu && (
+        <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
+          <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+            <button
+              onClick={handleExpertiseBackClick}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ‹
+            </button>
+            <h3 className="font-medium">Expertise</h3>
+          </div>
+
+          <div className="p-2">
+            <Input
+              placeholder="Search expertise"
+              className="mb-2"
+              value={expertiseSearchInput}
+              onChange={(e) => setExpertiseSearchInput(e.target.value)}
+              prefix={<IoSearchOutline className="text-gray-400" />}
+            />
+
+            <div className="py-1 max-h-64 overflow-y-auto">
+              {FILTER_OPTIONS.expertise.filter((exp) =>
+                exp.toLowerCase().includes(expertiseSearchInput.toLowerCase())
+              ).length > 0 ? (
+                FILTER_OPTIONS.expertise
+                  .filter((exp) =>
+                    exp
+                      .toLowerCase()
+                      .includes(expertiseSearchInput.toLowerCase())
+                  )
+                  .map((exp) => (
+                    <button
+                      key={exp}
+                      onClick={() => handleFilter("expertise", exp)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 rounded text-sm"
+                    >
+                      {exp}
+                    </button>
+                  ))
+              ) : (
+                <div className="text-center py-2 text-gray-500">
+                  No expertise found
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -509,7 +971,8 @@ const MembersDirectory = () => {
               key={key}
               className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
             >
-              {key.charAt(0).toUpperCase() + key.slice(1)}: {value}
+              {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
+              {value.length > 20 ? value.substring(0, 20) + "..." : value}
               <button
                 onClick={() => handleFilter(key, "")}
                 className="ml-1 hover:text-blue-900"
@@ -545,8 +1008,6 @@ const MembersDirectory = () => {
         </div>
       </div>
     );
-
-  // Replace the renderTableContent function with this updated version:
 
   const renderTableContent = () => {
     if (isDataLoading) {
@@ -669,183 +1130,9 @@ const MembersDirectory = () => {
     ));
   };
 
-  // Replace the entire "Members Table" section (starting from the comment "/* Members Table */" to the end of the component)
-
-  {
-    /* Members Table */
-  }
-  <div
-    className={`p-5 mt-16 md:mt-10 ${
-      hasActiveFilters || isSearchActive ? "pt-2" : "pt-20"
-    }`}
-  >
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Members{" "}
-            {!isDataLoading && Array.isArray(members) && `(${members.length})`}
-          </h2>
-          {!isDataLoading && Array.isArray(members) && members.length > 0 && (
-            <div className="text-sm text-gray-500">
-              {isSearchActive && `Search results for "${searchInput}"`}
-              {hasActiveFilters && !isSearchActive && "Filtered results"}
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
-                  Full Name
-                </th>
-                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
-                  Qualification
-                </th>
-                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
-                  Location
-                </th>
-                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
-                  Email Address
-                </th>
-                <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 tracking-wider">
-                  Contact
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {renderTableContent()}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="md:hidden">
-          {isDataLoading ? (
-            <div className="py-12 text-center">
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00A99D]"></div>
-                <span className="text-gray-500">Loading members...</span>
-              </div>
-            </div>
-          ) : !Array.isArray(members) || members.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="flex flex-col items-center justify-center space-y-2">
-                <div className="text-gray-400 text-4xl">👥</div>
-                <span className="text-gray-500 font-medium">
-                  {isSearchActive || hasActiveFilters
-                    ? "No matching members found"
-                    : "No members found"}
-                </span>
-                {(isSearchActive || hasActiveFilters) && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-[#00A99D] hover:text-[#008F84] font-medium text-sm"
-                  >
-                    Clear filters and search
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {members.map((member, index) => (
-                <div
-                  key={member._id || index}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                        {member.imageURL ? (
-                          <Image
-                            src={member.imageURL}
-                            alt={member.fullName || "Member"}
-                            width={48}
-                            height={48}
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-[#00A99D] text-white flex items-center justify-center text-xl font-medium">
-                            {member.fullName?.charAt(0) || "?"}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 text-lg truncate">
-                            {member.fullName || "Unknown"}
-                          </h3>
-                          {member.role === "moderator" && (
-                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full flex-shrink-0">
-                              Moderator
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          <div className="font-medium">
-                            {member.medicalQualification || "Not specified"}
-                          </div>
-                          {member.yearOfGraduation && (
-                            <div className="text-xs text-gray-500">
-                              Graduated {member.yearOfGraduation}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          {getCountryCode(member.countryOfPractice) ? (
-                            <ReactCountryFlag
-                              countryCode={getCountryCode(
-                                member.countryOfPractice
-                              )}
-                              svg
-                              style={{ width: "1.2em", height: "1.2em" }}
-                            />
-                          ) : (
-                            <span>🌐</span>
-                          )}
-                          <span className="text-sm text-gray-600">
-                            {member.countryOfPractice || "Not specified"}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-500 mb-3">
-                          {member.email || "Not provided"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 ml-3">
-                      {member.phoneNumber ? (
-                        <button
-                          onClick={() =>
-                            handleWhatsAppConnect(member.phoneNumber)
-                          }
-                          className="px-4 py-2 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors duration-150 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow"
-                        >
-                          <FaWhatsapp className="text-base" />
-                          <span>Connect</span>
-                        </button>
-                      ) : (
-                        <span className="text-sm text-gray-400">
-                          No contact
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>;
-
   return (
     <div className="flex min-h-screen bg-white">
-      <div className=" ">{renderSidebar()}</div>
+      <div className="">{renderSidebar()}</div>
 
       {/* Main Content */}
       <div className="flex-1 mt-16 md:mt-0 md:ml-64">
@@ -916,6 +1203,11 @@ const MembersDirectory = () => {
                       {hasActiveFilters &&
                         !isSearchActive &&
                         "Filtered results"}
+                      {useFrontendFiltering && (
+                        <span className="ml-2 text-blue-600">
+                          • Enhanced filtering
+                        </span>
+                      )}
                     </div>
                   )}
               </div>
@@ -949,7 +1241,7 @@ const MembersDirectory = () => {
               </div>
 
               {/* Mobile Card View */}
-              <div className="md:hidden ">
+              <div className="md:hidden">
                 {isDataLoading ? (
                   <div className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
@@ -1005,11 +1297,11 @@ const MembersDirectory = () => {
                                 <h3 className="font-semibold text-gray-900 truncate">
                                   {member.fullName || "Unknown"}
                                 </h3>
-                                {/* {member.role === "moderator" && (
+                                {member.role === "moderator" && (
                                   <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full flex-shrink-0">
                                     Moderator
                                   </span>
-                                )} */}
+                                )}
                               </div>
                               <div className="text-sm text-gray-600 mb-2">
                                 <div className="font-medium">

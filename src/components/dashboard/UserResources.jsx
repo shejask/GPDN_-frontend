@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -30,7 +30,8 @@ import {
   FileUnknownOutlined,
 } from "@ant-design/icons";
 import { IoDownloadOutline } from "react-icons/io5";
-import { FaImage, FaUser } from "react-icons/fa";
+import { FaImage, FaUser, FaFileAlt } from "react-icons/fa";
+import { MdClose } from "react-icons/md";
 import {
   fetchResourcesByAuthor,
   deleteResource,
@@ -46,6 +47,9 @@ import Link from "next/link";
 const defaultAvatarPath = "/assets/default-avatar.png";
 
 const { Meta } = Card;
+
+// Constants
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
 
 const UserResources = () => {
   const router = useRouter();
@@ -67,6 +71,7 @@ const UserResources = () => {
       console.error = originalConsoleError;
     };
   }, []);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
   const [totalResources, setTotalResources] = useState(0);
@@ -82,16 +87,18 @@ const UserResources = () => {
     description: "",
     tags: [],
     content: "",
-    file: null,
+    files: [],
   });
 
   const [inputVisible, setInputVisible] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [resourceToView, setResourceToView] = useState(null);
-  const [existingFile, setExistingFile] = useState(null);
+  const [existingFiles, setExistingFiles] = useState([]);
   const richTextRef = React.useRef();
   const [inputValue, setInputValue] = useState("");
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     loadUserResources();
@@ -130,25 +137,7 @@ const UserResources = () => {
           resourceData = response.data.data;
         }
 
-        // Filter resources based on registrationStatus or approvalStatus if needed
-        // Uncomment one of these if you want to show only approved resources
-        // resourceData = resourceData.filter(resource => resource.registrationStatus === 'approved');
-        // resourceData = resourceData.filter(resource => resource.approvalStatus === true);
-
         console.log("Loaded user resources:", resourceData);
-        console.log(
-          "Registration status example:",
-          resourceData.length > 0
-            ? resourceData[0].registrationStatus
-            : "No resources"
-        );
-        console.log(
-          "Approval status example:",
-          resourceData.length > 0
-            ? resourceData[0].approvalStatus
-            : "No resources"
-        );
-
         setResources(resourceData);
         setTotalResources(resourceData.length);
       } else {
@@ -196,34 +185,233 @@ const UserResources = () => {
     setResourceToDelete(null);
   };
 
-  const handleDownload = async (resource) => {
-    try {
-      message.loading({ content: "Starting download...", key: "download" });
+  // Utility functions
+  const isImageFile = useCallback((filename) => {
+    if (!filename || typeof filename !== "string") return false;
+    const extension = filename.split(".").pop()?.toLowerCase();
+    return IMAGE_EXTENSIONS.includes(extension);
+  }, []);
 
-      // Get file path from files array if available, otherwise use filePath or file
-      const filePath =
-        resource.files && resource.files.length
-          ? resource.files[0]
-          : resource.filePath || resource.file;
+  const getFileExtension = useCallback((filename) => {
+    if (!filename) return "";
+    return filename.split(".").pop()?.toLowerCase() || "";
+  }, []);
 
-      const response = await downloadResourceFile(
-        filePath,
-        resource.fileName || resource.title
-      );
+  const getFileIcon = useCallback(
+    (filename) => {
+      const extension = getFileExtension(filename);
 
-      if (response.success) {
-        message.success({ content: "Download started", key: "download" });
-      } else {
-        throw new Error(response.error || "Failed to download file");
+      switch (extension) {
+        case "pdf":
+          return <FaFileAlt className="text-red-500" />;
+        case "doc":
+        case "docx":
+          return <FaFileAlt className="text-blue-500" />;
+        case "xls":
+        case "xlsx":
+          return <FaFileAlt className="text-green-500" />;
+        case "ppt":
+        case "pptx":
+          return <FaFileAlt className="text-orange-500" />;
+        default:
+          return isImageFile(filename) ? (
+            <FaImage className="text-purple-500" />
+          ) : (
+            <FaFileAlt className="text-gray-500" />
+          );
       }
-    } catch (err) {
-      console.error("Error downloading file:", err);
-      message.error({
-        content: err.message || "Failed to download file",
-        key: "download",
-      });
-    }
-  };
+    },
+    [isImageFile, getFileExtension]
+  );
+
+  const handleDownload = useCallback(
+    async (files, title) => {
+      if (!files || !files.length) {
+        message.error("No file available for download");
+        return;
+      }
+
+      try {
+        // If multiple files, download them one by one
+        if (files.length > 1) {
+          message.info(`Downloading ${files.length} files...`);
+
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const isFullUrl =
+              file.startsWith("http") || file.startsWith("https");
+            const fileURL = isFullUrl ? file : file;
+
+            if (!fileURL) {
+              console.error("Invalid file URL for:", file);
+              continue;
+            }
+
+            const originalFilename =
+              file.split("/").pop() ||
+              file.split("\\").pop() ||
+              `file-${i + 1}`;
+            const fileExtension = getFileExtension(file) || "file";
+            const filename = originalFilename.includes(".")
+              ? originalFilename
+              : `${title || originalFilename}-${i + 1}.${fileExtension}`;
+
+            try {
+              const response = await fetch(fileURL);
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = filename;
+              a.style.display = "none";
+
+              document.body.appendChild(a);
+              a.click();
+
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+              }, 100);
+
+              // Small delay between downloads
+              if (i < files.length - 1) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
+              }
+            } catch (error) {
+              console.error(`Error downloading file ${i + 1}:`, error);
+              // Try opening in new tab as fallback
+              window.open(fileURL, "_blank");
+            }
+          }
+
+          message.success(`All ${files.length} files downloaded successfully`);
+          return;
+        }
+
+        // Single file download
+        const filePath = files[0];
+        const isFullUrl =
+          filePath.startsWith("http") || filePath.startsWith("https");
+        const fileURL = isFullUrl ? filePath : filePath;
+
+        if (!fileURL) {
+          throw new Error("Invalid file URL");
+        }
+
+        const originalFilename =
+          filePath.split("/").pop() || filePath.split("\\").pop() || "download";
+        const fileExtension = getFileExtension(filePath) || "file";
+        const filename = originalFilename.includes(".")
+          ? originalFilename
+          : `${title || originalFilename}.${fileExtension}`;
+
+        try {
+          const response = await fetch(fileURL);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.style.display = "none";
+
+          document.body.appendChild(a);
+          a.click();
+
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }, 100);
+
+          message.success("File downloaded successfully");
+        } catch (fetchError) {
+          console.log(
+            "Blob download failed, trying alternative method:",
+            fetchError
+          );
+
+          // Fallback methods
+          try {
+            const a = document.createElement("a");
+            a.href = fileURL;
+            a.download = filename;
+            a.rel = "noopener noreferrer";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+              document.body.removeChild(a);
+            }, 100);
+
+            message.success("Download initiated");
+          } catch (linkError) {
+            console.error("Link download failed:", linkError);
+            window.open(fileURL, "_blank");
+            message.success("Opening file in new tab");
+          }
+        }
+      } catch (error) {
+        console.error("Error downloading file:", error);
+        message.error("Failed to download the file. Please try again later.");
+      }
+    },
+    [getFileExtension]
+  );
+
+  const handleSingleImageDownload = useCallback(
+    async (filePath, title, index) => {
+      try {
+        const isFullUrl =
+          filePath.startsWith("http") || filePath.startsWith("https");
+        const fileURL = isFullUrl ? filePath : filePath;
+
+        if (!fileURL) {
+          throw new Error("Invalid file URL");
+        }
+
+        const originalFilename =
+          filePath.split("/").pop() || filePath.split("\\").pop() || "download";
+        const fileExtension = getFileExtension(filePath) || "file";
+        const filename = originalFilename.includes(".")
+          ? originalFilename
+          : `${title || originalFilename}-${index + 1}.${fileExtension}`;
+
+        const response = await fetch(fileURL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 100);
+
+        message.success("Image downloaded successfully");
+      } catch (error) {
+        console.error("Error downloading image:", error);
+        message.error("Failed to download the image. Please try again later.");
+      }
+    },
+    [getFileExtension]
+  );
 
   const handlePreview = (resource) => {
     setPreviewResource(resource);
@@ -244,10 +432,10 @@ const UserResources = () => {
             .filter(Boolean)
         : [],
       content: resource.content || "",
-      file: null,
+      files: [],
     });
-    setExistingFile(
-      resource.files && resource.files.length ? resource.files[0] : null
+    setExistingFiles(
+      resource.files && resource.files.length ? resource.files : []
     );
     setEditModalVisible(true);
     setTimeout(() => {
@@ -278,11 +466,28 @@ const UserResources = () => {
         richTextRef.current?.getContent() || editForm.content
       );
 
-      // Only append file if a new file is selected
-      if (editForm.file) {
-        formData.append("file", editForm.file);
+      // Handle file management - send all files (existing + new) to merge them
+      const allFiles = [];
+
+      // Add existing files that weren't removed
+      if (existingFiles && existingFiles.length > 0) {
+        allFiles.push(...existingFiles);
       }
-      // Do NOT append anything if no new file is selected
+
+      // Add new files
+      if (editForm.files && editForm.files.length > 0) {
+        editForm.files.forEach((file) => {
+          allFiles.push(file);
+        });
+      }
+
+      // Send all files to merge them
+      allFiles.forEach((file) => {
+        formData.append("file", file);
+      });
+
+      // Add a flag to indicate this is a merge operation
+      formData.append("mergeFiles", "true");
 
       const response = await fetch(
         "https://api.thegpdn.org/api/resource/EditResource",
@@ -297,7 +502,7 @@ const UserResources = () => {
         message.success("Resource updated successfully!");
         setEditModalVisible(false);
         setResourceToEdit(null);
-        setExistingFile(null);
+        setExistingFiles([]);
         loadUserResources();
       } else {
         throw new Error(data.message || "Failed to update resource");
@@ -314,139 +519,225 @@ const UserResources = () => {
     setViewModalVisible(true);
   };
 
-  const getFileIcon = (resource) => {
-    // Check for files array, filePath, or file property
-    if (
-      !resource.filePath &&
-      !resource.file &&
-      (!resource.files || !resource.files.length)
-    ) {
-      return (
-        <FileUnknownOutlined style={{ fontSize: "32px", color: "#00A99D" }} />
-      );
-    }
+  // Add this new function after the existing utility functions
+  const handleImageView = useCallback((imageUrl, title, index) => {
+    setSelectedImage({
+      url: imageUrl,
+      title: title,
+      index: index,
+    });
+    setImageModalOpen(true);
+  }, []);
 
-    // Get file path from files array if available, otherwise use filePath or file
-    const filePath =
-      resource.files && resource.files.length
-        ? resource.files[0]
-        : resource.filePath || resource.file;
-    const extension = getFileExtension(filePath);
+  // Add this new component after the utility functions
+  const ImageModal = ({ isOpen, onClose, image }) => {
+    if (!isOpen || !image) return null;
 
-    switch (extension.toLowerCase()) {
-      case "pdf":
-        return (
-          <FilePdfOutlined style={{ fontSize: "32px", color: "#ff4d4f" }} />
-        );
-      case "doc":
-      case "docx":
-        return (
-          <FileWordOutlined style={{ fontSize: "32px", color: "#00A99D" }} />
-        );
-      case "xls":
-      case "xlsx":
-        return (
-          <FileExcelOutlined style={{ fontSize: "32px", color: "#52c41a" }} />
-        );
-      case "ppt":
-      case "pptx":
-        return (
-          <FilePptOutlined style={{ fontSize: "32px", color: "#fa8c16" }} />
-        );
-      case "jpg":
-      case "jpeg":
-      case "png":
-      case "gif":
-        return (
-          <FileImageOutlined style={{ fontSize: "32px", color: "#00A99D" }} />
-        );
-      default:
-        return <FileOutlined style={{ fontSize: "32px", color: "#00A99D" }} />;
-    }
-  };
-
-  const handleInputConfirm = () => {
-    if (inputValue && !editForm.includes(inputValue)) {
-      setTags([...editForm.tags, inputValue]);
-    }
-    setInputVisible(false);
-    setInputValue("");
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+        <div className="relative max-w-4xl max-h-[90vh] mx-4">
+          <button
+            onClick={onClose}
+            className="absolute -top-12 right-0 text-white text-2xl hover:text-gray-300 transition-colors"
+          >
+            <MdClose />
+          </button>
+          <img
+            src={image.url}
+            alt={image.title}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 rounded-b-lg">
+            <p className="text-white text-sm font-medium">{image.title}</p>
+            <p className="text-gray-300 text-xs">Image {image.index + 1}</p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderFilePreview = (resource) => {
-    // Get file path from files array if available, otherwise use filePath or file
-    const filePath =
-      resource.files && resource.files.length
-        ? resource.files[0]
-        : resource.filePath || resource.file;
+    if (!resource.files || !resource.files.length) return null;
 
-    if (!filePath) {
-      return (
-        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-gray-500">No file attached to this resource</p>
-        </div>
-      );
-    }
-
-    const isImage = isImageFile(filePath);
-    const fileURL = filePath.startsWith("http")
-      ? filePath
-      : `${process.env.NEXT_PUBLIC_API_URL || ""}/${filePath}`;
-
-    if (isImage) {
-      return (
-        <div className="mt-4">
-          <div className="relative overflow-hidden rounded-lg">
-            <img
-              src={fileURL}
-              alt={resource.title}
-              className="w-72 h-72 object-cover rounded-lg"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = "none";
-              }}
-            />
-          </div>
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => handleDownload(resource)}
-              className="flex items-center justify-center px-4 py-2 border-2 border-[#00A99D] rounded-lg gap-2 text-[#00A99D] hover:bg-[#00A99D] hover:text-white transition-all font-medium"
-            >
-              <IoDownloadOutline className="text-lg" />
-              <span>Download</span>
-            </button>
-            <button
-              onClick={() => handlePreview(resource)}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg gap-2 text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <FaImage className="text-sm" />
-              <span>View Full Size</span>
-            </button>
-          </div>
-        </div>
-      );
-    }
+    const imageFiles = resource.files.filter((file) => isImageFile(file));
+    const documentFiles = resource.files.filter((file) => !isImageFile(file));
 
     return (
-      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mt-4 border border-gray-200">
-        <div className="text-2xl">{getFileIcon(resource)}</div>
-        <div className="flex-1">
-          <div className="font-medium text-gray-800 break-all">
-            {filePath.split("/").pop() ||
-              filePath.split("\\").pop() ||
-              "Unknown file"}
-          </div>
-          <div className="text-sm text-gray-500">
-            {getFileExtension(filePath).toUpperCase()} File
+      <div className="mt-4 border-t pt-4">
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <FaFileAlt className="text-gray-500" />
+            Files ({resource.files.length})
+          </h4>
+
+          {/* Image Gallery */}
+          {imageFiles.length > 0 && (
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
+                <FaImage className="text-blue-500" />
+                Images ({imageFiles.length})
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {imageFiles.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <div className="border rounded-lg overflow-hidden bg-gray-50 hover:shadow-lg transition-all duration-300">
+                      <div className="relative">
+                        <img
+                          src={file}
+                          alt={`${resource.title} - Image ${index + 1}`}
+                          className="w-full h-40 object-cover"
+                        />
+
+                        {/* Action buttons overlay */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() =>
+                                handleImageView(file, resource.title, index)
+                              }
+                              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-lg hover:bg-gray-100 transition-colors shadow-md"
+                              title="View full size"
+                            >
+                              <FaImage className="text-sm" />
+                              <span className="text-sm font-medium">View</span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleSingleImageDownload(
+                                  file,
+                                  resource.title,
+                                  index
+                                )
+                              }
+                              className="flex items-center gap-2 px-4 py-2 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors shadow-md"
+                              title="Download image"
+                            >
+                              <IoDownloadOutline className="text-sm" />
+                              <span className="text-sm font-medium">
+                                Download
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Image info */}
+                      <div className="p-3 bg-white">
+                        <p className="text-xs text-gray-600 truncate">
+                          {file.split("/").pop() || `Image ${index + 1}`}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {getFileExtension(file).toUpperCase()} Image
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Document Files */}
+          {documentFiles.length > 0 && (
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
+                <FaFileAlt className="text-green-500" />
+                Documents ({documentFiles.length})
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {documentFiles.map((file, index) => {
+                  const fileExtension = getFileExtension(file);
+                  const fileName =
+                    file.split("/").pop() ||
+                    file.split("\\").pop() ||
+                    `Document ${index + 1}`;
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-sm">
+                          {getFileIcon(file)}
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-800 truncate mb-1">
+                          {fileName}
+                        </div>
+                        <div className="text-sm text-gray-500 mb-2">
+                          {fileExtension.toUpperCase()} Document
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              handleDownload(
+                                [file],
+                                `${resource.title}-${index + 1}`
+                              )
+                            }
+                            className="flex items-center gap-1 px-3 py-1 text-xs bg-[#00A99D] text-white rounded hover:bg-[#008F84] transition-colors"
+                          >
+                            <IoDownloadOutline className="text-xs" />
+                            Download
+                          </button>
+                          {(fileExtension === "pdf" ||
+                            fileExtension === "doc" ||
+                            fileExtension === "docx") && (
+                            <button
+                              onClick={() => window.open(file, "_blank")}
+                              className="flex items-center gap-1 px-3 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors"
+                            >
+                              <FaFileAlt className="text-xs" />
+                              View
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Actions */}
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => handleDownload(resource.files, resource.title)}
+              className="flex items-center justify-center px-4 py-2 bg-[#00A99D] text-white rounded-lg gap-2 hover:bg-[#008F84] transition-all font-medium shadow-sm"
+            >
+              <IoDownloadOutline className="text-sm" />
+              <span>Download All Files</span>
+            </button>
+
+            {imageFiles.length > 0 && (
+              <button
+                onClick={() =>
+                  handleDownload(imageFiles, `${resource.title}-images`)
+                }
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-600 rounded-lg gap-2 hover:bg-gray-50 transition-colors"
+              >
+                <FaImage className="text-sm" />
+                <span>Download All Images</span>
+              </button>
+            )}
+
+            {documentFiles.length > 0 && (
+              <button
+                onClick={() =>
+                  handleDownload(documentFiles, `${resource.title}-documents`)
+                }
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-600 rounded-lg gap-2 hover:bg-gray-50 transition-colors"
+              >
+                <FaFileAlt className="text-sm" />
+                <span>Download All Documents</span>
+              </button>
+            )}
           </div>
         </div>
-        <button
-          onClick={() => handleDownload(resource)}
-          className="flex items-center justify-center px-3 py-1 border-2 border-[#00A99D] rounded-lg gap-1 text-[#00A99D] hover:bg-[#00A99D] hover:text-white transition-all font-medium text-sm"
-        >
-          <IoDownloadOutline />
-          <span>Download</span>
-        </button>
       </div>
     );
   };
@@ -472,11 +763,7 @@ const UserResources = () => {
       return (
         <div className="flex justify-center">
           <img
-            src={
-              filePath.startsWith("http")
-                ? filePath
-                : `${process.env.NEXT_PUBLIC_API_URL || ""}/${filePath}`
-            }
+            src={filePath}
             alt={previewResource.title}
             className="max-w-full max-h-[70vh]"
           />
@@ -490,11 +777,7 @@ const UserResources = () => {
       return (
         <div className="h-[70vh]">
           <iframe
-            src={`${
-              filePath.startsWith("http")
-                ? filePath
-                : `${process.env.NEXT_PUBLIC_API_URL || ""}/${filePath}`
-            }#toolbar=0`}
+            src={`${filePath}#toolbar=0`}
             className="w-full h-full"
             title={previewResource.title}
           />
@@ -504,7 +787,7 @@ const UserResources = () => {
 
     return (
       <div className="text-center p-8">
-        <div className="mb-4">{getFileIcon(previewResource)}</div>
+        <div className="mb-4">{getFileIcon(filePath)}</div>
         <p>Preview not available for this file type</p>
         <p className="text-gray-500 mt-2">
           You can download the file to view it
@@ -513,7 +796,7 @@ const UserResources = () => {
           type="primary"
           icon={<DownloadOutlined />}
           className="mt-4 bg-[#00A99D] hover:bg-[#008F84] border-none"
-          onClick={() => handleDownload(previewResource)}
+          onClick={() => handleDownload([filePath], previewResource.title)}
         >
           Download File
         </Button>
@@ -641,16 +924,16 @@ const UserResources = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {resource.title}
                 </h3>
-                <p className="text-gray-600  leading-relaxed line-clamp-2 md:w-4/5">
+                <p className="text-gray-600 leading-relaxed line-clamp-2 md:w-4/5">
                   {resource.description}
                 </p>
-                <hr className=" mt-2" />
-                <p className="text-gray-600 mb-4 leading-relaxed mt-5 md:w-4/5">
+                <hr className="mt-2" />
+                <div className="text-gray-600 mb-4 leading-relaxed mt-5 md:w-4/5">
                   <div
                     className="prose"
                     dangerouslySetInnerHTML={{ __html: resource.content }}
                   />
-                </p>
+                </div>
 
                 {/* Approval Status */}
                 {resource.approvalStatus === false && (
@@ -664,9 +947,6 @@ const UserResources = () => {
                 {/* Category Tag */}
                 {resource.tags && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {/* <span className="px-4 py-2 bg-gradient-to-r from-[#E3F5FE] to-[#F0FFFE] text-[#00A99D] rounded-full text-sm font-medium border border-[#00A99D]/20">
-                      {resource.tags}
-                    </span> */}
                     {resource.tags &&
                       Array.isArray(resource.tags) &&
                       resource.tags.map((tag, index) => (
@@ -736,7 +1016,10 @@ const UserResources = () => {
             type="primary"
             className="bg-[#00A99D] hover:bg-[#008F84] border-none"
             icon={<DownloadOutlined />}
-            onClick={() => previewResource && handleDownload(previewResource)}
+            onClick={() =>
+              previewResource &&
+              handleDownload(previewResource.files, previewResource.title)
+            }
           >
             Download
           </Button>,
@@ -756,7 +1039,6 @@ const UserResources = () => {
         okText="Save"
         confirmLoading={editLoading}
         width={700}
-        
       >
         <div className="flex flex-col gap-4">
           <Input
@@ -771,11 +1053,6 @@ const UserResources = () => {
               handleEditFormChange("description", e.target.value)
             }
           />
-          {/* <Input
-            placeholder="Tags (comma separated)"
-            value={editForm.tags}
-            onChange={(e) => handleEditFormChange("tags", e.target.value)}
-          /> */}
 
           <div className="mb-8">
             <label className="block text-gray-900 text-base font-semibold mb-3">
@@ -877,7 +1154,15 @@ const UserResources = () => {
                   onClick={() => setEditForm((prev) => ({ ...prev, tags: [] }))}
                   className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  Clear All
+                  Clear All Tags
+                </button>
+                <button
+                  onClick={() =>
+                    setEditForm((prev) => ({ ...prev, files: [] }))
+                  }
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Clear New Files
                 </button>
               </div>
             </div>
@@ -891,32 +1176,96 @@ const UserResources = () => {
               onChange={(value) => handleEditFormChange("content", value)}
             />
           </div>
+
           <div>
-            <label className="block mb-1 text-sm">File</label>
-            {existingFile && !editForm.file && (
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs text-gray-500">
-                  <Image
-                    src={existingFile}
-                    width={100}
-                    height={100}
-                    alt="image"
-                    className=" rounded-xl"
-                  />
-                </span>
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => setExistingFile(null)}
-                >
-                  Remove
-                </Button>
+            <label className="block mb-1 text-sm">Files</label>
+
+            {/* Show existing files */}
+            {existingFiles && existingFiles.length > 0 && (
+              <div className="mb-4">
+                <h5 className="text-sm font-medium text-gray-600 mb-2">
+                  Current Files ({existingFiles.length}):
+                </h5>
+                <div className="space-y-2">
+                  {existingFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 p-2 bg-gray-50 rounded border"
+                    >
+                      <span className="text-xs text-gray-500 flex-1 truncate">
+                        {file.split("/").pop() || `File ${index + 1}`}
+                      </span>
+                      <Button
+                        size="small"
+                        danger
+                        onClick={() => {
+                          const newFiles = existingFiles.filter(
+                            (_, i) => i !== index
+                          );
+                          setExistingFiles(newFiles);
+                        }}
+                        title="Remove this file"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Removing files here will delete them from the resource. This
+                  action cannot be undone.
+                </p>
               </div>
             )}
+
+            {/* File input for new files */}
             <input
               type="file"
-              onChange={(e) => handleEditFormChange("file", e.target.files[0])}
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files);
+                setEditForm((prev) => ({ ...prev, files: files }));
+              }}
+              className="w-full p-2 border border-gray-300 rounded"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Select multiple files to add. Files will be merged with existing
+              ones.
+            </p>
+
+            {/* Show selected new files */}
+            {editForm.files && editForm.files.length > 0 && (
+              <div className="mt-2">
+                <h6 className="text-sm font-medium text-gray-600 mb-2">
+                  New Files to Add ({editForm.files.length}):
+                </h6>
+                <div className="space-y-1">
+                  {editForm.files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200"
+                    >
+                      <span className="text-xs text-blue-700 flex-1 truncate">
+                        {file.name}
+                      </span>
+                      <Button
+                        size="small"
+                        danger
+                        onClick={() => {
+                          const newFiles = editForm.files.filter(
+                            (_, i) => i !== index
+                          );
+                          setEditForm((prev) => ({ ...prev, files: newFiles }));
+                        }}
+                        title="Remove this new file"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Modal>
@@ -954,26 +1303,39 @@ const UserResources = () => {
             </div>
             {resourceToView.files && resourceToView.files.length > 0 && (
               <div className="mb-4">
-                <strong>File:</strong>
-                <a
-                  href={
-                    resourceToView.files[0].startsWith("http")
-                      ? resourceToView.files[0]
-                      : `${process.env.NEXT_PUBLIC_API_URL || ""}/${
-                          resourceToView.files[0]
-                        }`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  View File
-                </a>
+                <strong>Files:</strong>
+                <div className="space-y-2 mt-2">
+                  {resourceToView.files.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                    >
+                      <span className="text-sm text-gray-600 flex-1">
+                        {file.split("/").pop() || `File ${idx + 1}`}
+                      </span>
+                      <a
+                        href={file}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline text-sm"
+                      >
+                        View File
+                      </a>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         )}
       </Modal>
+
+      {/* Image Modal */}
+      <ImageModal
+        isOpen={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        image={selectedImage}
+      />
     </div>
   );
 };

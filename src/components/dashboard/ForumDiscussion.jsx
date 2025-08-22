@@ -1161,9 +1161,11 @@ const ForumDiscussion = () => {
                     </div>
 
                     {/* title */}
-                    <p className="text-primary-600 font-semibold text-lg mb-3 leading-relaxed">
-                      {post.title}
-                    </p>
+                    <Link href={`/forum/${post.id}`}>
+                      <p className="text-primary-600 font-semibold text-lg mb-3 leading-relaxed">
+                        {post.title}
+                      </p>
+                    </Link>
 
                     {/* Content */}
                     {post.content && (
@@ -1268,9 +1270,9 @@ const ForumDiscussion = () => {
                         <span className=" hidden md:block">Share · </span>{" "}
                         {post.shares || 0}
                       </button>
-                      <Link
+                      {/* <Link
                         key={post.id}
-                        href={`/forum/${post.id}`}
+                        
                         style={{ textDecoration: "none" }}
                         className=" flex items-center justify-center md:justify-start gap-1 border border-gray-200 w-1/5 md:w-auto text-xs md:text-sm md:px-3 py-1 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
@@ -1278,7 +1280,7 @@ const ForumDiscussion = () => {
                           <EyeOutlined className="" />
                           View
                         </button>
-                      </Link>
+                      </Link> */}
                     </div>
 
                     {/* Comment Section */}

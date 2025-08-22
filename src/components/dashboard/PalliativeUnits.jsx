@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Input } from "antd";
+import { Input, Modal, message, Select } from "antd";
 import logo from "../../app/assets/registation/logo.png";
 import { IoSearchOutline } from "react-icons/io5";
-import { MdClose, MdDashboard, MdMenu } from "react-icons/md";
+import { MdClose, MdDashboard, MdMenu, MdAdd } from "react-icons/md";
 import { FaRegFolder } from "react-icons/fa6";
 import { TbUsers } from "react-icons/tb";
 import { PiBuildings } from "react-icons/pi";
@@ -16,17 +16,72 @@ import Link from "next/link";
 import {
   fetchPalliativeUnits,
   searchPalliativeUnit,
+  createPalliativeUnit,
+  fetchServices,
 } from "../../api/PalliativeUnit";
 import { usePathname } from "next/navigation"; // Add this import
 import { LogOut } from "lucide-react";
 import Sidebar from "../Sidebar";
+
 const PalliativeUnits = () => {
   const pathname = usePathname(); // Add this line
   const [showFilter, setShowFilter] = useState(false);
   const [showLocationMenu, setShowLocationMenu] = useState(false);
+  const [showSpecialityMenu, setShowSpecialityMenu] = useState(false);
+  const [showSpecializationMenu, setShowSpecializationMenu] = useState(false);
+  const [showExpertiseMenu, setShowExpertiseMenu] = useState(false);
   const [palliativeUnits, setPalliativeUnits] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedSpeciality, setSelectedSpeciality] = useState("");
+  const [selectedSpecialization, setSelectedSpecialization] = useState("");
+  const [selectedExpertise, setSelectedExpertise] = useState("");
+
+  // Create modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [services, setServices] = useState([]);
+  const [formData, setFormData] = useState({
+    name: "",
+    state: "",
+    country: "",
+    services: "",
+    contactDetails: "",
+  });
+
+  // Speciality options
+  const specialityOptions = [
+    "Adult Palliative Care",
+    "Paediatric Palliative Care",
+    "Neuro-palliative care",
+    "Pulmonary palliative care",
+    "Ethics / Legal in Palliative Care",
+    "Research in Palliative Care",
+  ];
+
+  // Specialization options
+  const specializationOptions = [
+    "Oncology",
+    "Cardiology",
+    "Neurology",
+    "Respiratory",
+    "Geriatrics",
+    "Pediatrics",
+    "Pain Management",
+    "Symptom Control",
+  ];
+
+  // Expertise options
+  const expertiseOptions = [
+    "Pain Assessment",
+    "Symptom Management",
+    "End-of-Life Care",
+    "Family Support",
+    "Bereavement Counseling",
+    "Spiritual Care",
+    "Social Work",
+    "Nursing Care",
+  ];
 
   useEffect(() => {
     const fetchUnits = async () => {
@@ -61,11 +116,57 @@ const PalliativeUnits = () => {
         setLoading(false);
       }
     };
+
+    const fetchServicesData = async () => {
+      try {
+        const response = await fetchServices();
+        if (response?.success && response?.data) {
+          setServices(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching services:", error);
+      }
+    };
+
     fetchUnits();
+    fetchServicesData();
   }, []);
+
+  // Reference to fetchUnits for use in other functions
+  const fetchUnits = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchPalliativeUnits();
+      // Ensure we're getting an array from the API response structure
+      let units = [];
+      if (response?.success && response?.data && Array.isArray(response.data)) {
+        units = response.data;
+      } else if (response?.data?.data && Array.isArray(response.data.data)) {
+        units = response.data.data;
+      } else if (response?.data && Array.isArray(response.data)) {
+        units = response.data;
+      } else if (response?.data?.data) {
+        // If data.data exists but isn't an array, wrap it in an array
+        units = [response.data.data];
+      } else if (response?.data) {
+        // If data exists but isn't an array, wrap it in an array
+        units = [response.data];
+      }
+      console.log("Fetched palliative units:", units);
+      setPalliativeUnits(units);
+    } catch (error) {
+      console.error("Error fetching palliative units:", error);
+      setPalliativeUnits([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = async () => {
     setLoading(true);
+    // Clear speciality filter when searching
+    setSelectedSpeciality("");
+
     if (!searchInput.trim()) {
       // If search input is empty, fetch all units
       const response = await fetchPalliativeUnits();
@@ -109,6 +210,204 @@ const PalliativeUnits = () => {
     }
   };
 
+  const handleCreateUnit = async () => {
+    setCreateLoading(true);
+    try {
+      const response = await createPalliativeUnit(formData);
+      if (response) {
+        message.success("Palliative unit created successfully!");
+        setIsCreateModalOpen(false);
+        setFormData({
+          name: "",
+          state: "",
+          country: "",
+          services: "",
+          contactDetails: "",
+        });
+        // Refresh the list after creation
+        const refreshResponse = await fetchPalliativeUnits();
+        if (refreshResponse?.data) {
+          const units = Array.isArray(refreshResponse.data)
+            ? refreshResponse.data
+            : refreshResponse.data.data &&
+              Array.isArray(refreshResponse.data.data)
+            ? refreshResponse.data.data
+            : [refreshResponse.data];
+          setPalliativeUnits(units);
+        }
+      } else {
+        message.error("Failed to create palliative unit.");
+      }
+    } catch (error) {
+      console.error("Error creating palliative unit:", error);
+      message.error("Failed to create palliative unit.");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleLocationClick = () => {
+    setShowLocationMenu(true);
+    setShowFilter(false);
+  };
+
+  const handleBackClick = () => {
+    setShowLocationMenu(false);
+    setShowFilter(true);
+  };
+
+  const handleSpecialityClick = () => {
+    setShowSpecialityMenu(true);
+    setShowFilter(false);
+  };
+
+  const handleSpecialityBackClick = () => {
+    setShowSpecialityMenu(false);
+    setShowFilter(true);
+  };
+
+  const handleSpecializationClick = () => {
+    setShowSpecializationMenu(true);
+    setShowFilter(false);
+  };
+
+  const handleSpecializationBackClick = () => {
+    setShowSpecializationMenu(false);
+    setShowFilter(true);
+  };
+
+  const handleExpertiseClick = () => {
+    setShowExpertiseMenu(true);
+    setShowFilter(false);
+  };
+
+  const handleExpertiseBackClick = () => {
+    setShowExpertiseMenu(false);
+    setShowFilter(true);
+  };
+
+  const handleSpecialitySelect = (speciality) => {
+    setSelectedSpeciality(speciality);
+    setShowSpecialityMenu(false);
+    setShowFilter(false);
+    // Apply speciality filter
+    applySpecialityFilter(speciality);
+  };
+
+  const handleSpecializationSelect = (specialization) => {
+    setSelectedSpecialization(specialization);
+    setShowSpecializationMenu(false);
+    setShowFilter(false);
+    // Apply specialization filter
+    applySpecializationFilter(specialization);
+  };
+
+  const handleExpertiseSelect = (expertise) => {
+    setSelectedExpertise(expertise);
+    setShowExpertiseMenu(false);
+    setShowFilter(false);
+    // Apply expertise filter
+    applyExpertiseFilter(expertise);
+  };
+
+  const applySpecialityFilter = (speciality) => {
+    if (!speciality) return;
+
+    setLoading(true);
+    // Filter palliative units by speciality
+    // This is a client-side filter - you can implement server-side filtering if needed
+    const filteredUnits = palliativeUnits.filter((unit) => {
+      // Check if the unit has speciality information
+      // You might need to adjust this based on your actual data structure
+      return (
+        unit.speciality === speciality ||
+        unit.specialities?.includes(speciality) ||
+        unit.services?.some((service) =>
+          typeof service === "object"
+            ? service.speciality === speciality
+            : service === speciality
+        )
+      );
+    });
+
+    setPalliativeUnits(filteredUnits);
+    setLoading(false);
+  };
+
+  const applySpecializationFilter = (specialization) => {
+    if (!specialization) return;
+
+    setLoading(true);
+    // Filter palliative units by specialization
+    const filteredUnits = palliativeUnits.filter((unit) => {
+      return (
+        unit.specialization === specialization ||
+        unit.specializations?.includes(specialization)
+      );
+    });
+    setPalliativeUnits(filteredUnits);
+    setLoading(false);
+  };
+
+  const applyExpertiseFilter = (expertise) => {
+    if (!expertise) return;
+
+    setLoading(true);
+    // Filter palliative units by expertise
+    const filteredUnits = palliativeUnits.filter((unit) => {
+      return (
+        unit.expertise === expertise || unit.expertises?.includes(expertise)
+      );
+    });
+    setPalliativeUnits(filteredUnits);
+    setLoading(false);
+  };
+
+  const clearSpecialityFilter = () => {
+    setSelectedSpeciality("");
+    // Refresh the original list
+    fetchUnits();
+  };
+
+  const clearSpecializationFilter = () => {
+    setSelectedSpecialization("");
+    // Refresh the original list
+    fetchUnits();
+  };
+
+  const clearExpertiseFilter = () => {
+    setSelectedExpertise("");
+    // Refresh the original list
+    fetchUnits();
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      state: "",
+      country: "",
+      services: "",
+      contactDetails: "",
+    });
+  };
+
+  const openCreateModal = () => {
+    setIsCreateModalOpen(true);
+    resetForm();
+  };
+
+  const closeCreateModal = () => {
+    setIsCreateModalOpen(false);
+    resetForm();
+  };
+
   const sidebarMenus = [
     { menu: "Forum", icon: <MdDashboard />, link: "/forum" },
     {
@@ -144,8 +443,62 @@ const PalliativeUnits = () => {
       <div className="md:flex-1 md:ml-64 mt-16 md:mt-0">
         {/* Header */}
         <div className="p-5 md:flex justify-between items-center border-b border-gray-200 bg-white fixed md:w-[calc(100%-256px)] z-10">
-          <h1 className="text-xl font-semibold">Palliative Units Directory</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-semibold">
+              Palliative Units Directory
+            </h1>
+            <div className="flex items-center gap-2">
+              {selectedSpeciality && (
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-[#00A99D] text-white text-sm rounded-full">
+                    {selectedSpeciality}
+                  </span>
+                  <button
+                    onClick={clearSpecialityFilter}
+                    className="text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {selectedSpecialization && (
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-[#1976D2] text-white text-sm rounded-full">
+                    {selectedSpecialization}
+                  </span>
+                  <button
+                    onClick={clearSpecializationFilter}
+                    className="text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {selectedExpertise && (
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-[#FF6B35] text-white text-sm rounded-full">
+                    {selectedExpertise}
+                  </span>
+                  <button
+                    onClick={clearExpertiseFilter}
+                    className="text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex gap-3 relative filter-container">
+            {/* Create Button */}
+            <button
+              onClick={openCreateModal}
+              className="px-4 py-2 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors duration-150 flex items-center gap-2 font-medium shadow-sm"
+            >
+              <MdAdd className="text-lg" />
+              Create Unit
+            </button>
+
             <Input
               placeholder="Search Palliative Units..."
               className="md:w-64 h-9 md:h-10 "
@@ -161,6 +514,15 @@ const PalliativeUnits = () => {
               <IoSearchOutline /> Search
             </button>
 
+            {/* Filter Button */}
+            {/* <button
+              onClick={() => setShowFilter(!showFilter)}
+              className="px-3 py-2 mt-1 md:mt-0 h-9 md:h-10 bg-white border border-gray-200 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-2"
+            >
+              <IoFilterOutline />
+              Filter
+            </button> */}
+
             {/* Main Filter Menu */}
             {showFilter && (
               <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
@@ -175,8 +537,11 @@ const PalliativeUnits = () => {
                     Location
                     <span>›</span>
                   </button>
-                  <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center">
-                    Specialization
+                  <button
+                    onClick={handleSpecialityClick}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center"
+                  >
+                    Speciality
                     <span>›</span>
                   </button>
                   <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center">
@@ -219,12 +584,90 @@ const PalliativeUnits = () => {
                 </div>
               </div>
             )}
+
+            {/* Speciality Submenu */}
+            {showSpecialityMenu && (
+              <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
+                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                  <button
+                    onClick={handleSpecialityBackClick}
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    ‹
+                  </button>
+                  <h3 className="font-medium">Speciality</h3>
+                </div>
+                <div className="py-1">
+                  {specialityOptions.map((speciality, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSpecialitySelect(speciality)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 rounded"
+                    >
+                      <span className="text-sm">{speciality}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Specialization Submenu */}
+            {showSpecializationMenu && (
+              <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
+                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                  <button
+                    onClick={handleSpecializationBackClick}
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    ‹
+                  </button>
+                  <h3 className="font-medium">Specialization</h3>
+                </div>
+                <div className="py-1">
+                  {specializationOptions.map((specialization, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSpecializationSelect(specialization)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 rounded"
+                    >
+                      <span className="text-sm">{specialization}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Expertise Submenu */}
+            {showExpertiseMenu && (
+              <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-20">
+                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                  <button
+                    onClick={handleExpertiseBackClick}
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    ‹
+                  </button>
+                  <h3 className="font-medium">Expertise</h3>
+                </div>
+                <div className="py-1">
+                  {expertiseOptions.map((expertise, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleExpertiseSelect(expertise)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 rounded"
+                    >
+                      <span className="text-sm">{expertise}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Palliative Units Grid */}
         <div className="pt-20 p-5 mt-10">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-4">
             {loading ? (
               // Skeleton loading UI
               Array.from({ length: 6 }).map((_, index) => (
@@ -344,6 +787,165 @@ const PalliativeUnits = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Palliative Unit Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#00A99D] rounded-lg flex items-center justify-center">
+              <PiBuildings className="text-white text-xl" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Create New Palliative Unit
+              </h3>
+              <p className="text-sm text-gray-500">
+                Add a new palliative care unit to the directory
+              </p>
+            </div>
+          </div>
+        }
+        open={isCreateModalOpen}
+        onCancel={closeCreateModal}
+        footer={null}
+        width={600}
+        centered
+        className="create-palliative-modal"
+      >
+        <div className="py-1">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateUnit();
+            }}
+          >
+            <div className="space-y-6">
+              {/* Unit Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Unit Name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  size="large"
+                  placeholder="Enter palliative unit name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              {/* State */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  State/City <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  size="large"
+                  placeholder="e.g., Bangalore, India"
+                  value={formData.state}
+                  onChange={(e) => handleInputChange("state", e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              {/* Country */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Country <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  size="large"
+                  placeholder="e.g., India"
+                  value={formData.country}
+                  onChange={(e) => handleInputChange("country", e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              {/* Services */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Services <span className="text-red-500">*</span>
+                </label>
+
+                <Select
+                  size="large"
+                  placeholder="Select services"
+                  value={formData.services}
+                  onChange={(value) => handleInputChange("services", value)}
+                  style={{ width: "100%" }}
+                  options={services.map((service) => ({
+                    value: service._id,
+                    label: service.service,
+                  }))}
+                  loading={services.length === 0}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Select the services offered by this palliative unit
+                </p>
+              </div>
+
+              {/* Contact Details */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Details <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  size="large"
+                  placeholder="e.g., 9876543210"
+                  value={formData.contactDetails}
+                  onChange={(e) =>
+                    handleInputChange("contactDetails", e.target.value)
+                  }
+                  required
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Phone number or contact information
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={closeCreateModal}
+                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-150 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  createLoading ||
+                  !formData.name ||
+                  !formData.state ||
+                  !formData.country ||
+                  !formData.services ||
+                  !formData.contactDetails
+                }
+                className="px-6 py-2.5 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors duration-150 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {createLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <MdAdd className="text-lg" />
+                    Create Unit
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 };
