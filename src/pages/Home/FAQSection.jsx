@@ -25,7 +25,7 @@ const handleAccordionChange = (index) => (event, isExpanded) => {
   return (
     <section className="w-full h-auto  flex justify-center items-center pt-5 lg:pt-16 pb-10 lg:pb-24">
       <div className="w-full h-full  flex flex-col gap-12">
-        <h1 className="text-[2rem] md:text-[2.5rem] xl:text-[4rem] text-secondary font-semibold leading-[1.15]">
+        <h1 className="text-[2rem] md:text-[2.5rem] xl:text-[4rem] text-black font-semibold leading-[1.15]">
           Frequently Asked <br />
           Questions
         </h1>

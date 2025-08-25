@@ -10,7 +10,7 @@ import { RiInstagramLine } from "react-icons/ri";
 
 const Footer = () => {
   return (
-    <div className="w-full h-auto bg-secondary flex justify-center items-center ">
+    <div className="w-full h-auto bg-[#039187] flex justify-center items-center ">
       <div className="w-full h-full flex flex-col">
         {/* ---Top Part--- */}
         <div className="w-full h-full px-7 md:px-20 grid grid-flow-row md:grid-flow-col  md:grid-cols-[0.4fr_1fr] lg:grid-cols-[0.8fr_1fr] md:gap-x-12 lg:gap-x-28 pt-7 md:pt-20 pb-3 md:pb-10">

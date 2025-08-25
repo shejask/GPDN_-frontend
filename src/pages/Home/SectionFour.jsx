@@ -17,7 +17,7 @@ const SectionFour = () => {
         </div>
         <div className="flex flex-col gap-4 lg:gap-2 justify-between">
          <div className="flex flex-col gap-4 2xl:gap-8">
-         <h1 className="text-[2rem] md:text-[2.5rem] xl:text-[4rem] text-secondary font-semibold leading-[1]">
+         <h1 className="text-[2rem] md:text-[2.5rem] xl:text-[4rem] text-black font-semibold leading-[1]">
             Empowering <br className="hidden md:block lg:hidden"/>Compassionate Care
           </h1>
           <p className="text-xs md:text-sm lg:text-base 2xl:text-xl text-tertiary w-full">

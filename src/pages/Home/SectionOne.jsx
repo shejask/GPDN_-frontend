@@ -57,7 +57,7 @@ const SectionOne = () => {
             </div>
           </div>
           {/* ---Desktop Slider---- */}
-          <div className="hidden lg:flex w-full h-full justify-center relative ">
+          <div className="hidden md:flex w-full h-full justify-center relative ">
             <div className="absolute bottom-8 right-20 flex justify-center items-center z-10">
               <AnimatePresence>
               <motion.h4
@@ -122,7 +122,7 @@ const SectionOne = () => {
           </div>
 
           {/* ---Mobile Slider---  */}
-          <div className=" lg:hidden w-full h-[50vh] justify-center relative ">
+          <div className=" md:hidden w-full h-[50vh] justify-center relative ">
           <div className="absolute bottom-8 right-20 flex justify-center items-center z-10">
             <h4 className="font-poppins font-normal text-3xl text-white">0{currentImage+1}<span className="text-xs">/0{sliderImages.length}</span></h4>
             </div>
@@ -139,7 +139,7 @@ const SectionOne = () => {
         </div>
 
         {/* -----Right Side----- */}
-        <div className="w-full lg:h-full flex flex-col lg:pl-4 py-10 lg:py-0 ">
+        <div className="w-full md:h-full flex flex-col lg:pl-4 py-10 lg:py-0 ">
           <div className="w-full h-[40%]  flex justify-center items-center">
             <div className="w-full flex flex-col justify-center gap-2 lg:gap-1 xl:gap-3 2xl:gap-8 h-full">
               <div className="w-full flex flex-col text-sm md:text-[2vh]">

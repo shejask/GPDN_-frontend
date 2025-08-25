@@ -9,7 +9,7 @@ const SectionTwo = () => {
       <div className="w-full h-auto lg:h-[75%] xl:h-[80%]  flex flex-col gap-16 lg:grid lg:grid-cols-2  lg:gap-x-28">
         {/* ---Left Side---  */}
         <div className="flex flex-col justify-between gap-3 lg:gap-0 w-full h-full">
-          <h1 className="text-secondary font-semibold text-[2rem] md:text-[2.5rem] lg:text-[4vw] leading-[1.15]">
+          <h1 className="text-black font-semibold text-[2rem] md:text-[2.5rem] lg:text-[4vw] leading-[1.15]">
             Why Join GPDN?<br className="lg:hidden"/> A Global Network of Excellence
           </h1>
           <p className="text-[#0C0E12] font-normal text-[1.1rem] lg:text-[1.6vw] leading-tight">Discover the key benefits of being part of the Global Palliative Doctors Network. Collaborate with experts, stay updated on the latest developments, and elevate your practice with global support.</p>
