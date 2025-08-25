@@ -95,6 +95,7 @@ const UserResources = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [resourceToView, setResourceToView] = useState(null);
   const [existingFiles, setExistingFiles] = useState([]);
+  const [removedFiles, setRemovedFiles] = useState([]);
   const richTextRef = React.useRef();
   const [inputValue, setInputValue] = useState("");
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -437,6 +438,7 @@ const UserResources = () => {
     setExistingFiles(
       resource.files && resource.files.length ? resource.files : []
     );
+    setRemovedFiles([]); // Reset removed files when editing
     setEditModalVisible(true);
     setTimeout(() => {
       if (richTextRef.current && resource.content) {
@@ -466,28 +468,32 @@ const UserResources = () => {
         richTextRef.current?.getContent() || editForm.content
       );
 
-      // Handle file management - send all files (existing + new) to merge them
-      const allFiles = [];
+      // Handle file management with the new structure: [[existing+new], [removed]]
+      const filesToKeep = [];
+      const filesToRemove = [];
 
       // Add existing files that weren't removed
       if (existingFiles && existingFiles.length > 0) {
-        allFiles.push(...existingFiles);
+        filesToKeep.push(...existingFiles);
       }
 
       // Add new files
       if (editForm.files && editForm.files.length > 0) {
         editForm.files.forEach((file) => {
-          allFiles.push(file);
+          filesToKeep.push(file);
         });
       }
 
-      // Send all files to merge them
-      allFiles.forEach((file) => {
-        formData.append("file", file);
-      });
+      // Add files that were marked for removal
+      if (removedFiles && removedFiles.length > 0) {
+        filesToRemove.push(...removedFiles);
+      }
 
-      // Add a flag to indicate this is a merge operation
-      formData.append("mergeFiles", "true");
+      // Create the file array structure: [[filesToKeep], [filesToRemove]]
+      const fileArray = [filesToKeep, filesToRemove];
+
+      // Send the file array as JSON string
+      formData.append("file", JSON.stringify(fileArray));
 
       const response = await fetch(
         "https://api.thegpdn.org/api/resource/EditResource",
@@ -503,6 +509,7 @@ const UserResources = () => {
         setEditModalVisible(false);
         setResourceToEdit(null);
         setExistingFiles([]);
+        setRemovedFiles([]);
         loadUserResources();
       } else {
         throw new Error(data.message || "Failed to update resource");
@@ -1157,10 +1164,11 @@ const UserResources = () => {
                   Clear All Tags
                 </button>
                 <button
-                  onClick={() =>
-                    setEditForm((prev) => ({ ...prev, files: [] }))
-                  }
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                  onClick={() => {
+                    setEditForm((prev) => ({ ...prev, files: [] }));
+                    setRemovedFiles([]); // Reset removed files when clearing
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-900 hover:text-gray-900 transition-colors"
                 >
                   Clear New Files
                 </button>
@@ -1199,10 +1207,13 @@ const UserResources = () => {
                         size="small"
                         danger
                         onClick={() => {
+                          const fileToRemove = existingFiles[index];
                           const newFiles = existingFiles.filter(
                             (_, i) => i !== index
                           );
                           setExistingFiles(newFiles);
+                          // Add to removed files list
+                          setRemovedFiles((prev) => [...prev, fileToRemove]);
                         }}
                         title="Remove this file"
                       >
@@ -1211,6 +1222,31 @@ const UserResources = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Show removed files count */}
+                {removedFiles.length > 0 && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-red-700">
+                        {removedFiles.length} file(s) marked for removal
+                      </p>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          // Restore all removed files
+                          setExistingFiles((prev) => [
+                            ...prev,
+                            ...removedFiles,
+                          ]);
+                          setRemovedFiles([]);
+                        }}
+                        className="text-xs"
+                      >
+                        Restore All
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-gray-500 mt-2">
                   Removing files here will delete them from the resource. This
                   action cannot be undone.
@@ -1264,6 +1300,33 @@ const UserResources = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* File operation summary */}
+            {(editForm.files && editForm.files.length > 0) ||
+            (existingFiles && existingFiles.length > 0) ||
+            (removedFiles && removedFiles.length > 0) ? (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h6 className="text-sm font-medium text-blue-800 mb-2">
+                  File Operation Summary:
+                </h6>
+                <div className="text-xs text-blue-700 space-y-1">
+                  <p>• Files to keep: {existingFiles.length}</p>
+                  <p>• New files to add: {editForm.files?.length || 0}</p>
+                  <p>• Files to remove: {removedFiles.length}</p>
+                  <p className="font-medium">
+                    • Backend will receive: [[
+                    {existingFiles.length + (editForm.files?.length || 0)}{" "}
+                    files], [{removedFiles.length} files]]
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-xs text-gray-600">
+                  No file changes will be made
+                </p>
               </div>
             )}
           </div>
