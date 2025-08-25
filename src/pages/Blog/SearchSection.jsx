@@ -105,7 +105,7 @@ const SearchSection = ({  sendDataToParent,blogs }) => {
         <div className="w-full flex items-center justify-center h-[35vh] md:h-[40vh]">
           <div className="flex flex-col items-center gap-3 lg:gap-4 xl:gap-14 w-full md:w-[80%] lg:w-[40%]">
            <div className="flex flex-col items-center gap-1 lg:gap-2">
-           <h2 className="text-secondary font-semibold text-[2rem] md:text-[2.5rem] lg:text-5xl leading-none">
+           <h2 className="text-black font-semibold text-[2rem] md:text-[2.5rem] lg:text-5xl leading-none">
               GPDN Blog
             </h2>
             <p className="font-medium text-sm lg:text-base leading-normal text-[#525252] text-center">
@@ -154,7 +154,8 @@ const SearchSection = ({  sendDataToParent,blogs }) => {
            !latestBlogData ?
 
            (
-            <SkeletonLatestBlog/>
+            // <SkeletonLatestBlog/>
+            <h1>Blogs not found</h1>
            )
            
      

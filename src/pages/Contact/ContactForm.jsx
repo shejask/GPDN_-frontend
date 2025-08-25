@@ -36,7 +36,7 @@ const ContactForm = () => {
       <div className="h-full w-full">
         <div className="h-full w-full flex flex-col items-start justify-between">
           <div className="w-full h-auto lg:h-[45vh] flex justify-start items-center py-5 lg:py-0">
-            <h1 className="font-semibold text-[1.9rem] md:text-[3rem] xl:text-[4rem] leading-tight text-secondary">
+            <h1 className="font-semibold text-[1.9rem] md:text-[3rem] xl:text-[4rem] leading-tight text-black">
               Get in touch with us.
               <br />
               We're here to assist you.

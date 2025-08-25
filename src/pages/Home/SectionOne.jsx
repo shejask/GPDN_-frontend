@@ -143,13 +143,13 @@ const SectionOne = () => {
           <div className="w-full h-[40%]  flex justify-center items-center">
             <div className="w-full flex flex-col justify-center gap-2 lg:gap-1 xl:gap-3 2xl:gap-8 h-full">
               <div className="w-full flex flex-col text-sm md:text-[2vh]">
-                <h2 className="text-secondary  font-bold ">
+                <h2 className="text-black  font-bold ">
                   468{" "}
                   <span className="text-[#252525] font-medium uppercase">
                     Expert Doctors
                   </span>
                 </h2>
-                <h2 className="text-secondary font-bold ">
+                <h2 className="text-black font-bold ">
                   83+{" "}
                   <span className="text-[#252525] font-medium uppercase">
                     Countries

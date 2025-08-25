@@ -37,11 +37,11 @@ const Navbar = () => {
             <Link href={"/blog"}>
               <button className="">Blog</button>
             </Link>
-            <Link href={"/contact"}>
-              <button className="">Contact</button>
-            </Link>
             <Link href={"/Palliative-home"}>
               <button className="">Palliative</button>
+            </Link>
+            <Link href={"/contact"}>
+              <button className="">Contact</button>
             </Link>
           </div>
         </div>
@@ -49,10 +49,10 @@ const Navbar = () => {
         {/* ---Get Started button--- */}
         <div className=" flex items-center gap-5">
           <Link
-            href="/about"
+            href="/registration"
             className="bg-primary hover:bg-[#039187] cursor-pointer transition-all duration-300 ease-in text-white text-sm font-poppins py-3 px-5 rounded-xl hidden items-center justify-around md:flex gap-2"
           >
-            Explore
+            Sign up
             <GoChevronRight className="text-xl" />
           </Link>
           <Link

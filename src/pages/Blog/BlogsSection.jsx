@@ -96,9 +96,7 @@ const BlogsSection = ({ blogs }) => {
 
             :
 
-            Array.from({ length: 3 }).map((_,index)=>(
-              <SkeletonBlogCard key={index}/>
-            ))
+            <h1></h1>
         }
        
       </div>
