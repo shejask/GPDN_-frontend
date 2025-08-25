@@ -781,7 +781,7 @@ const PalliativeUnits = () => {
                 </div>
               ))
             ) : (
-              <div className="col-span-2 text-center py-10">
+              <div className="col-span-12 text-center w-full py-10">
                 <p className="text-gray-500">No palliative units found</p>
               </div>
             )}
