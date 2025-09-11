@@ -99,10 +99,10 @@ const Footer = () => {
                     {data.links.map((link, index) => (
                       <a
                         key={index}
-                        href={"/"}
+                        href={link.link}
                         className="text-white opacity-60 font-normal text-[0.7rem] lg:text-base"
                       >
-                        {link}
+                        {link.title}
                       </a>
                     ))}
                   </div>

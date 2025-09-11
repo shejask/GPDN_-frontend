@@ -28,7 +28,7 @@ const SectionThree = () => {
             alt="Img"
             className="w-full rounded-3xl h-full object-cover"
           />
-          <motion.div
+          {/* <motion.div
             onHoverStart={() => setIsHover(true)}
             onHoverEnd={() => setIsHover(false)}
             className={` ${
@@ -36,7 +36,7 @@ const SectionThree = () => {
             }  transition-all duration-300 ease-linear  absolute cursor-pointer top-[40%] left-1/2 transform -translate-x-1/2 bg-blackhalf w-24 h-24 rounded-full flex justify-center items-center`}
           >
             <FaPlay className="text-white opacity-100 text-4xl" />
-          </motion.div>
+          </motion.div> */}
         </div>
       </div>
     </section>

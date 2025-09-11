@@ -8,14 +8,14 @@ import blogImage1 from "./HOMEPAGE/SectionFive/blog-image-1.jpeg";
 import blogImage2 from "./HOMEPAGE/SectionFive/blog-image-2.jpeg";
 import blogImage3 from "./HOMEPAGE/SectionFive/blog-image-3.jpeg";
 import blogImage4 from "./HOMEPAGE/SectionFive/blog-image-4.png";
-import memeberProfile1 from "./ABOUT/TeamMembers/member1.webp"
-import memeberProfile2 from "./ABOUT/TeamMembers/member2.webp"
-import memeberProfile3 from "./ABOUT/TeamMembers/member3.webp"
-import memeberProfile4 from "./ABOUT/TeamMembers/member4.webp"
-import memeberProfile5 from "./ABOUT/TeamMembers/member5.webp"
-import memeberProfile6 from "./ABOUT/TeamMembers/member6.webp"
-import memeberProfile7 from "./ABOUT/TeamMembers/member7.webp"
-import memeberProfile8 from "./ABOUT/TeamMembers/member8.webp"
+import memeberProfile1 from "./ABOUT/TeamMembers/member1.webp";
+import memeberProfile2 from "./ABOUT/TeamMembers/member2.webp";
+import memeberProfile3 from "./ABOUT/TeamMembers/member3.webp";
+import memeberProfile4 from "./ABOUT/TeamMembers/member4.webp";
+import memeberProfile5 from "./ABOUT/TeamMembers/member5.webp";
+import memeberProfile6 from "./ABOUT/TeamMembers/member6.webp";
+import memeberProfile7 from "./ABOUT/TeamMembers/member7.webp";
+import memeberProfile8 from "./ABOUT/TeamMembers/member8.webp";
 
 export const excellenceData = [
   {
@@ -145,82 +145,104 @@ export const blogsData = [
 
 export const faqData = [
   {
-    q: "Who can join the network?",
-    a: "Our platform is open to healthcare professionals, researchers, and caregivers passionate about improving palliative care.",
+    q: "Who can join the Global Palliative Doctors Network (GPDN)?",
+    a: `Membership is open exclusively to medical doctors (graduates in modern medicine) who are practicing or training in palliative care. The network is designed as a professional platform for physicians to share clinical knowledge, case discussions, resources, and experiences related to palliative medicine.\n\nWe welcome doctors from all specialties who have an interest in palliative care and a commitment to improving the quality of life for patients and families.`,
   },
   {
-    q: "What resources are available to members?",
-    a: "Members have access to a global community of experts, educational webinars, research articles, and patient referral services.",
+    q: "What kinds of resources are provided to members?",
+    a: "Members are provided with access to international experts, specialized webinars, and curated research publications.",
   },
   {
-    q: "How can I collaborate with other professionals?",
-    a: "You can engage in real-time discussions, peer consultations, and knowledge sharing sessions with global specialists on our platform.",
+    q: "What opportunities are there to collaborate with other professionals?",
+    a: "Our platform enables real-time discussions, peer-to-peer collaborations, and knowledge-sharing sessions with specialists from around the world.",
   },
   {
-    q: " Is there a membership fee to join?",
-    a: "No, our platform is free to join and offers a range of resources and services to support your professional growth and patient care.",
+    q: "Are there membership charges for joining the platform?",
+    a: "No, membership is free of charge and provides access to resources that support your professional growth.",
   },
 ];
 
-
 export const teamMembersData = [
   {
-    name : "Dr. Mujeeb Rahman",
+    name: "Dr. Mujeeb Rahman",
     qualification: "Founder & CEO Graperoject",
-    profileImage: memeberProfile1
+    profileImage: memeberProfile1,
   },
   {
-    name : "Dr. Shafika Banoo",
+    name: "Dr. Shafika Banoo",
     qualification: "MD Gen Med (MGMC, Puducherry)",
-    profileImage: memeberProfile2
+    profileImage: memeberProfile2,
   },
   {
-    name : "Dr. Beatrice Dorsey Rivera",
+    name: "Dr. Beatrice Dorsey Rivera",
     qualification: "MD, MsC",
-    profileImage: memeberProfile3
+    profileImage: memeberProfile3,
   },
   {
-    name : "Dr. Jairam Kamala Ramakrishnan",
+    name: "Dr. Jairam Kamala Ramakrishnan",
     qualification: "MD",
-    profileImage: memeberProfile4
+    profileImage: memeberProfile4,
   },
   {
-    name : "Dr. Maria Madeline Baylon-Mallillin",
+    name: "Dr. Maria Madeline Baylon-Mallillin",
     qualification: "Founder & CEO Graperoject",
-    profileImage: memeberProfile5
+    profileImage: memeberProfile5,
   },
   {
-    name : "Dr. Noorjehan Begum",
+    name: "Dr. Noorjehan Begum",
     qualification: "MD Gen Med (MGMC, Puducherry)",
-    profileImage: memeberProfile6
+    profileImage: memeberProfile6,
   },
   {
-    name : "Dr. Preeya Desh",
+    name: "Dr. Preeya Desh",
     qualification: "MD, MsC",
-    profileImage: memeberProfile7
+    profileImage: memeberProfile7,
   },
   {
-    name : "Dr. Thiloshini Govender",
+    name: "Dr. Thiloshini Govender",
     qualification: "MD",
-    profileImage: memeberProfile8
+    profileImage: memeberProfile8,
   },
-]
+];
 
 export const footerLinksData = [
   {
-    heading: "Information",
-    links: ["Health Care", "Health Solution", "AI Assistant", "How We Work"],
+    heading: "Pages",
+    links: [
+      { title: "Home", link: "/" },
+      { title: "About Us", link: "/about" },
+      { title: "Blog", link: "/blog" },
+      { title: "Palliative Units", link: "/Palliative-home" },
+      { title: "Contact Us", link: "/contact" },
+    ],
   },
   {
-    heading: "Company",
-    links: ["About Us", "Careers", "Contact Us", "How We Work"],
+    heading: "Information",
+    links: [
+      { title: "Health Care", link: "/health-care" },
+      { title: "Health Solution", link: "/health-solution" },
+      { title: "AI Assistant", link: "/ai-assistant" },
+      { title: "How We Work", link: "/how-we-work" },
+    ],
   },
+
   {
     heading: "Help Center",
-    links: ["FAQs", "Tutorials", "Community", "API Documentation"],
+    links: [
+      { title: "FAQs", link: "/faqs" },
+      { title: "Tutorials", link: "/tutorials" },
+      { title: "Community", link: "/community" },
+      { title: "API Documentation", link: "/api-docs" },
+    ],
   },
+  
   {
     heading: "Resources",
-    links: ["Privacy Policy", "Terms of Service", "Feedback", "Blogs"],
+    links: [
+      { title: "Privacy Policy", link: "/privacy-policy" },
+      { title: "Terms of Service", link: "/terms-of-service" },
+      { title: "Feedback", link: "/feedback" },
+      { title: "Blogs", link: "/blogs" },
+    ],
   },
 ];

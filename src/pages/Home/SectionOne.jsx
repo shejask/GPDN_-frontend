@@ -5,28 +5,26 @@ import React, { useEffect, useState } from "react";
 import slideImage1 from "../../app/assets/HOMEPAGE/SectionOne/slide-image-1.png";
 import slideImage2 from "../../app/assets/HOMEPAGE/SectionOne/slide-image-2.png";
 import slideImage3 from "../../app/assets/HOMEPAGE/SectionOne/slide-image-3.png";
-import doctorImage1 from "../../app/assets/HOMEPAGE/SectionOne/doctor-image-1.png";
-import doctorImage2 from "../../app/assets/HOMEPAGE/SectionOne/doctor-image-2.png";
-import doctorImage3 from "../../app/assets/HOMEPAGE/SectionOne/doctor-image-3.png";
-import connectionsImage from "../../app/assets/HOMEPAGE/SectionOne/connection.webp";
+import doctorImage1 from "../../app/assets/HOMEPAGE/new-webps/small1.webp";
+import doctorImage2 from "../../app/assets/HOMEPAGE/new-webps/small2.webp";
+import doctorImage3 from "../../app/assets/HOMEPAGE/new-webps/small3.webp";
+import connectionsImage from "../../app/assets/HOMEPAGE/new-webps/hands.webp";
 import { PiArrowUpRightLight } from "react-icons/pi";
 import { GoChevronRight } from "react-icons/go";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 
-
 const SectionOne = () => {
+  const sliderImages = [slideImage1, slideImage2, slideImage3];
 
-  const sliderImages = [slideImage1,slideImage2,slideImage3];
-
-  const [currentImage,setCurrentImage] = useState(0) 
+  const [currentImage, setCurrentImage] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % sliderImages.length);
-    }, 3000); 
+    }, 6000);
 
-    return () => clearInterval(interval); 
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -35,22 +33,29 @@ const SectionOne = () => {
         {/* -----Left Side----- */}
         <div className=" w-full h-auto lg:h-full flex flex-col-reverse justify-between gap-8 lg:gap-0 lg:grid lg:grid-cols-[50%_50%]">
           <div className="relative w-full h-full">
-            <div className="lg:absolute flex lg:items-center top-[8.5vh] xl:top-[8vh] left-0 w-full h-auto">
-              <div className="flex flex-col gap-4 lg:gap-0 lg:justify-between">
-                <h1 className="text-4xl  md:text-7xl lg:text-[6.5vw] xl:text-[6.5vw] font-light lg:leading-none  w-full lg:w-[150%]  text-[#1E1E1E]">
-                  Global Care<br className="hidden lg:block"/>for a{" "}
-                  <span className="font-medium">Brighter Tomorrow</span>
+            <div className="lg:absolute flex lg:items-center top-[8.5vh] xl:top-[8vh] left-0 w-full md:w-1/2 h-auto">
+              <div className="flex flex-col gap-4 lg:gap-10 lg:justify-between">
+                <h1 className="text-4xl  md:text-7xl lg:text-[6.5vw] xl:text-[6vw] font-light lg:leading-none  w-full lg:w-[150%]  text-[#1E1E1E]">
+                  Global Care
+                  <br className="hidden lg:block" />
+                  for a <span className="font-medium">Brighter Tomorrow</span>
                 </h1>
                 <div className="flex flex-col w-full gap-3 xl:gap-5">
-                  <p className="font-normal text-[2vh]  flex-nowrap">Join a global network of dedicated palliative care doctors committed to transforming patient lives through compassion, innovation, and shared knowledge.
+                  <p className="font-normal text-[2vh]  flex-nowrap">
+                    Join a global network of dedicated palliative care doctors
+                    committed to transforming patient lives through compassion,
+                    innovation, and shared knowledge.
                   </p>
                   <div>
-                   <div className="flex ">
-                   <Link href={`/about`} className="bg-primary  hover:bg-[#039187] cursor-pointer transition-all duration-300 ease-in text-white text-base 2xl:text-xl font-poppins py-4 px-6 rounded-xl flex items-center justify-around gap-2">
-                      Join the Network
-                      <GoChevronRight className="text-xl"/>
-                   </Link>
-                   </div>
+                    <div className="flex ">
+                      <Link
+                        href={`/about`}
+                        className="bg-primary  hover:bg-[#039187] cursor-pointer transition-all duration-300 ease-in text-white text-base 2xl:text-xl font-poppins py-4 px-6 rounded-xl flex items-center justify-around gap-2"
+                      >
+                        Join the Network
+                        <GoChevronRight className="text-xl" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -60,21 +65,24 @@ const SectionOne = () => {
           <div className="hidden md:flex w-full h-full justify-center relative ">
             <div className="absolute bottom-8 right-20 flex justify-center items-center z-10">
               <AnimatePresence>
-              <motion.h4
-               key={currentImage}
-               initial={{
-                 opacity:0
-               }}
-               animate={{
-                 opacity:1
-               }}
-               
-               transition={{
-                delay:0.2,
-                 duration:0.6,
-                 ease:'easeIn'
-               }}
-               className="font-poppins font-normal text-3xl text-white">0{currentImage+1}<span className="text-xs">/0{sliderImages.length}</span></motion.h4>
+                <motion.h4
+                  key={currentImage}
+                  initial={{
+                    opacity: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                  }}
+                  transition={{
+                    delay: 0.2,
+                    duration: 6,
+                    ease: "easeIn",
+                  }}
+                  className="font-poppins font-normal text-3xl text-white"
+                >
+                  0{currentImage + 1}
+                  <span className="text-xs">/0{sliderImages.length}</span>
+                </motion.h4>
               </AnimatePresence>
             </div>
             <svg
@@ -92,39 +100,43 @@ const SectionOne = () => {
                 className="w-full h-full"
               >
                 <AnimatePresence mode="wait">
-                <motion.div
-                key={currentImage}
-                initial={{
-                  opacity:0
-                }}
-                animate={{
-                  opacity:1
-                }}
-                exit={{
-                  opacity:0.7
-                }}
-                transition={{
-                  duration:0.6,
-                  ease:'easeIn'
-                }}
-                 className="w-full h-full ">
-                  <Image
-                    src={sliderImages[currentImage]}
-                    alt="Caring"
-                    layout="fill"
-                    objectFit="cover"
-                  />
-                </motion.div>
+                  <motion.div
+                    key={currentImage}
+                    initial={{
+                      opacity: 0,
+                    }}
+                    animate={{
+                      opacity: 1,
+                    }}
+                    exit={{
+                      opacity: 0.7,
+                    }}
+                    transition={{
+                      delay: 0.2,
+                      duration: 0.6,
+                      ease: "easeIn",
+                    }}
+                    className="w-full h-full "
+                  >
+                    <Image
+                      src={sliderImages[currentImage]}
+                      alt="Caring"
+                      layout="fill"
+                      objectFit="cover"
+                    />
+                  </motion.div>
                 </AnimatePresence>
-                
               </foreignObject>
             </svg>
           </div>
 
           {/* ---Mobile Slider---  */}
           <div className=" md:hidden w-full h-[50vh] justify-center relative ">
-          <div className="absolute bottom-8 right-20 flex justify-center items-center z-10">
-            <h4 className="font-poppins font-normal text-3xl text-white">0{currentImage+1}<span className="text-xs">/0{sliderImages.length}</span></h4>
+            <div className="absolute bottom-8 right-20 flex justify-center items-center z-10">
+              <h4 className="font-poppins font-normal text-3xl text-white">
+                0{currentImage + 1}
+                <span className="text-xs">/0{sliderImages.length}</span>
+              </h4>
             </div>
             <div className="w-full h-full rounded-2xl">
               <Image
@@ -156,40 +168,43 @@ const SectionOne = () => {
                   </span>
                 </h2>
               </div>
-              
+
               <div className="w-full  flex  items-center ">
-              <div className="flex justify-between w-full gap-2 xl:w-[90%] items-center ">
-                <div className="xl:h-14 xl:w-14 flex justify-center items-center ">
-                  <Image
-                  
-                    alt="Doctor profile image"
-                    className="rounded-full w-full h-full"
-                    src={doctorImage1}
-                  />
+                <div className="flex justify-between w-full gap-2 xl:w-[90%] items-center ">
+                  <div className="xl:h-14 xl:w-14 w-14 h-14 flex justify-center items-center ">
+                    <Image
+                      alt="Doctor profile image"
+                      className="rounded-full w-full h-full object-cover"
+                      src={doctorImage1}
+                    />
+                  </div>
+                  <div className=" xl:h-14  xl:w-14 w-14 h-14  flex justify-center items-center ">
+                    <Image
+                      alt="Doctor profile image"
+                      className="rounded-full w-full h-full object-cover"
+                      src={doctorImage2}
+                    />
+                  </div>
+                  <div className="xl:h-14 xl:w-14 w-14 h-14  flex justify-center items-center ">
+                    <Image
+                      alt="Doctor profile image"
+                      className="rounded-full w-full h-full object-cover"
+                      src={doctorImage3}
+                    />
+                  </div>
+                  <Link
+                    className="rounded-full hover:bg-[#CACACA] p-3.5 lg:p-1 xl:p-2 text-[#CACACA] transition-all duration-300 ease-in cursor-pointer hover:text-gray-500 border border-[#CACACA] xl:h-15  xl:w-15  flex justify-center  items-center"
+                    href={`/about`}
+                  >
+                    <PiArrowUpRightLight className="text-5xl lg:text-4xl" />
+                  </Link>
                 </div>
-                <div className=" xl:h-14  xl:w-14   flex justify-center items-center ">
-                  <Image
-                    alt="Doctor profile image"
-                    className="rounded-full w-full h-full"
-                    src={doctorImage2}
-                  />
-                </div>
-                <div className="xl:h-14 xl:w-14  flex justify-center items-center ">
-                  <Image
-                    alt="Doctor profile image"
-                    className="rounded-full w-full h-full"
-                    src={doctorImage3}
-                  />
-                </div>
-               <Link className="rounded-full hover:bg-[#CACACA] p-3.5 lg:p-1 xl:p-2 text-[#CACACA] transition-all duration-300 ease-in cursor-pointer hover:text-gray-500 border border-[#CACACA] xl:h-15  xl:w-15  flex justify-center  items-center" href={`/about`}>
-                  <PiArrowUpRightLight className="text-5xl lg:text-4xl" />
-                </Link>
-              </div>
-              
               </div>
 
               <p className="font-normal text-[1.5vh] overflow-hidden w-full">
-              A united community of palliative care doctors working across borders to elevate patient care, exchange clinical expertise, and stand by each other in life’s most challenging moments.
+                A united community of palliative care doctors working across
+                borders to elevate patient care, exchange clinical expertise,
+                and stand by each other in life’s most challenging moments.
               </p>
             </div>
           </div>
