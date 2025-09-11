@@ -92,13 +92,13 @@ const SectionFive = () => {
           {blogs.map((data, index) => (
             <div
               key={data._id || index}
-              className="w-full h-full grid grid-flow-row md:grid-flow-col gap-y-2 md:gap-y-0 md:grid-cols-[0.5fr_1fr_1fr]"
+              className="w-full h-full grid grid-flow-row md:grid-flow-col gap-y-2 md:gap-y-0 md:grid-cols-2"
             >
               <div className="h-48 md:h-60 w-full rounded-2xl overflow-hidden relative">
-                {data.imageURL && (
+                {data.thumbnail && (
                   <Image
                     alt={data.title || "Blog image"}
-                    src={data.imageURL}
+                    src={data.thumbnail}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="w-full h-full object-cover object-center rounded-2xl"
@@ -106,33 +106,36 @@ const SectionFive = () => {
                   />
                 )}
               </div>
-              <div className="flex flex-col justify-between p-0 md:p-2 lg:p-4 gap-2.5 md:gap-0 md:border-t border-neutral-200">
-                <h2 className="text-lg xl:text-3xl 2xl:text-4xl font-semibold leading-snug">
+              <div className="flex flex-col  p-1  gap-2.5 md:gap-5 md:border-t border-neutral-200">
+                <h2 className="text-lg xl:text-3xl 2xl:text-4xl font-semibold  md:mt-2 leading-snug">
                   {data.title || "Untitled Blog"}
                 </h2>
-                <p className="hidden lg:block text-tertiary text-base font-normal">
+                {/* <p className="hidden lg:block text-tertiary text-base font-normal">
                   {formatDate(data.createdAt)}
-                </p>
-              </div>
-              <div className="flex flex-col justify-between p-0 md:p-2 lg:p-4 gap-2.5 md:gap-0 md:border-t border-neutral-200">
-                <p className="font-normal text-xs xl:text-base 2xl:text-lg text-tertiary w-full leading-relaxed">
-                  {data.description && data.description.length > 300
-                    ? data.description
-                        .slice(0, 300)
-                        .split(" ")
-                        .slice(0, -1)
-                        .join(" ") + " ..."
-                    : data.description || "No description available"}
-                </p>
-                <p className="lg:hidden text-tertiary text-xs font-normal">
-                  {formatDate(data.createdAt)}
-                </p>
-                <Link href={`/blog/${data._id}`} className="flex justify-start">
-                  <div className="border border-neutral-200 bg-white hover:bg-neutral-200 transition-all duration-300 ease-in cursor-pointer text-[#0C0E12] rounded-full flex gap-1 items-center px-4 py-1.5">
-                    <p className="text-xs xl:text-base">Read More</p>
-                    <CgArrowRight className="text-base xl:text-xl" />
-                  </div>
-                </Link>
+                </p> */}
+                <div className="flex flex-col justify-between p-0 md:p-0 lg:p-0 gap-2.5  md:border-t ">
+                  <p className="font-normal text-xs xl:text-base 2xl:text-lg text-tertiary w-full leading-relaxed mt-0 md:mt-2">
+                    {data.description && data.description.length > 300
+                      ? data.description
+                          .slice(0, 300)
+                          .split(" ")
+                          .slice(0, -1)
+                          .join(" ") + " ..."
+                      : data.description || "No description available"}
+                  </p>
+                  <p className="lg:hidden text-tertiary text-xs font-normal">
+                    {formatDate(data.createdAt)}
+                  </p>
+                  <Link
+                    href={`/blog/${data._id}`}
+                    className="flex justify-start"
+                  >
+                    <div className="border border-neutral-200 bg-white hover:bg-neutral-200 transition-all duration-300 ease-in cursor-pointer text-[#0C0E12] rounded-full flex gap-1 items-center px-4 py-1.5">
+                      <p className="text-xs xl:text-base">Read More</p>
+                      <CgArrowRight className="text-base xl:text-xl" />
+                    </div>
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -147,7 +150,9 @@ const SectionFive = () => {
               layout="fill"
             />
           </div>
-          <p className="uppercase text-primary font-semibold">No blogs available at the moment.</p>
+          <p className="uppercase text-primary font-semibold">
+            No blogs available at the moment.
+          </p>
         </div>
       )}
     </section>

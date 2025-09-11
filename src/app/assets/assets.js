@@ -216,33 +216,20 @@ export const footerLinksData = [
       { title: "Contact Us", link: "/contact" },
     ],
   },
-  {
-    heading: "Information",
-    links: [
-      { title: "Health Care", link: "/health-care" },
-      { title: "Health Solution", link: "/health-solution" },
-      { title: "AI Assistant", link: "/ai-assistant" },
-      { title: "How We Work", link: "/how-we-work" },
-    ],
-  },
 
   {
     heading: "Help Center",
     links: [
-      { title: "FAQs", link: "/faqs" },
-      { title: "Tutorials", link: "/tutorials" },
-      { title: "Community", link: "/community" },
-      { title: "API Documentation", link: "/api-docs" },
+      { title: "Terms & Conditions", link: "/terms-and-conditions" },
+      { title: "Privacy Policy", link: "/privacy-policy" },
     ],
   },
-  
+
   {
-    heading: "Resources",
+    heading: "Contact Us",
     links: [
-      { title: "Privacy Policy", link: "/privacy-policy" },
-      { title: "Terms of Service", link: "/terms-of-service" },
-      { title: "Feedback", link: "/feedback" },
-      { title: "Blogs", link: "/blogs" },
+      { title: "Email", det: "info@thegpdn.com", icon: "email" },
+      { title: "Phone", det: "91-9876543210", icon: "phone" },
     ],
   },
 ];

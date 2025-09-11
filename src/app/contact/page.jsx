@@ -13,7 +13,7 @@ const page = () => {
     <ContactForm/>
     </div>
     </div>
-    <ContactInfo/>
+    {/* <ContactInfo/> */}
     <Footer/>
   </main>
   )
