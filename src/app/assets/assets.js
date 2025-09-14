@@ -179,19 +179,20 @@ export const teamMembersData = [
     profileImage: memeberProfile3,
   },
   {
-    name: "Dr. Jairam Kamala Ramakrishnan",
-    qualification: "MD",
-    profileImage: memeberProfile4,
+    name: "Dr. Noorjehan Begum",
+    qualification: "MD Gen Med (MGMC, Puducherry)",
+    profileImage: memeberProfile6,
   },
   {
     name: "Dr. Maria Madeline Baylon-Mallillin",
     qualification: "Founder & CEO Graperoject",
     profileImage: memeberProfile5,
   },
+
   {
-    name: "Dr. Noorjehan Begum",
-    qualification: "MD Gen Med (MGMC, Puducherry)",
-    profileImage: memeberProfile6,
+    name: "Dr. Jairam Kamala Ramakrishnan",
+    qualification: "MD",
+    profileImage: memeberProfile4,
   },
   {
     name: "Dr. Preeya Desh",

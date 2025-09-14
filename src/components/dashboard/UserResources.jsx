@@ -468,32 +468,19 @@ const UserResources = () => {
         richTextRef.current?.getContent() || editForm.content
       );
 
-      // Handle file management with the new structure: [[existing+new], [removed]]
-      const filesToKeep = [];
-      const filesToRemove = [];
-
-      // Add existing files that weren't removed
-      if (existingFiles && existingFiles.length > 0) {
-        filesToKeep.push(...existingFiles);
-      }
-
-      // Add new files
+      // Handle new files - append each file individually
       if (editForm.files && editForm.files.length > 0) {
-        editForm.files.forEach((file) => {
-          filesToKeep.push(file);
-        });
+        for (let i = 0; i < editForm.files.length; i++) {
+          formData.append("file", editForm.files[i]);
+        }
       }
 
-      // Add files that were marked for removal
+      // Handle files to remove - append each file individually
       if (removedFiles && removedFiles.length > 0) {
-        filesToRemove.push(...removedFiles);
+        for (let i = 0; i < removedFiles.length; i++) {
+          formData.append("removeFiles", removedFiles[i]);
+        }
       }
-
-      // Create the file array structure: [[filesToKeep], [filesToRemove]]
-      const fileArray = [filesToKeep, filesToRemove];
-
-      // Send the file array as JSON string
-      formData.append("file", JSON.stringify(fileArray));
 
       const response = await fetch(
         "https://api.thegpdn.org/api/resource/EditResource",
@@ -1304,7 +1291,7 @@ const UserResources = () => {
             )}
 
             {/* File operation summary */}
-            {(editForm.files && editForm.files.length > 0) ||
+            {/* {(editForm.files && editForm.files.length > 0) ||
             (existingFiles && existingFiles.length > 0) ||
             (removedFiles && removedFiles.length > 0) ? (
               <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1316,9 +1303,9 @@ const UserResources = () => {
                   <p>• New files to add: {editForm.files?.length || 0}</p>
                   <p>• Files to remove: {removedFiles.length}</p>
                   <p className="font-medium">
-                    • Backend will receive: [[
-                    {existingFiles.length + (editForm.files?.length || 0)}{" "}
-                    files], [{removedFiles.length} files]]
+                    • Backend will receive: {editForm.files?.length || 0} new
+                    files as "file" fields, {removedFiles.length} files as
+                    "removeFiles" fields
                   </p>
                 </div>
               </div>
@@ -1328,7 +1315,7 @@ const UserResources = () => {
                   No file changes will be made
                 </p>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </Modal>

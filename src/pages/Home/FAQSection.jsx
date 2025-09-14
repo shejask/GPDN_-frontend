@@ -111,8 +111,8 @@ const FAQSection = () => {
                       <ArrowForwardIosSharpIcon
                         className={`${
                           isExpanded
-                            ? "bg-secondary text-white"
-                            : "bg-white text-secondary"
+                            ? "bg-black text-white"
+                            : "bg-black text-secondary"
                         } border-none rounded-full  p-1.5 transition-transform duration-300`}
                         sx={{
                           fontSize: "2rem",

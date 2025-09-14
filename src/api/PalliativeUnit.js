@@ -25,11 +25,32 @@ export const fetchServices = async () => {
 
 export const createPalliativeUnit = async (unitData) => {
   try {
+    // Get the current user ID from localStorage
+    const userId = localStorage.getItem("userId");
+
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    // Prepare the request body to match the API format
+    const requestBody = {
+      name: unitData.name,
+      state: unitData.state,
+      country: unitData.country,
+      services: unitData.services,
+      contactDetails: unitData.contactDetails,
+      authorId: userId,
+    };
+
+    console.log("Creating palliative unit with data:", requestBody);
+
     const response = await Api.post(
       palliativeRoutes.createPalliativeUnit,
-      unitData
+      requestBody
     );
-    return response;
+
+    console.log("Palliative unit creation response:", response);
+    return response.data;
   } catch (error) {
     console.error("Error creating palliative unit:", error);
     return {

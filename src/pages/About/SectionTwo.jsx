@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import React from 'react'
-import aboutBanner from '../../app/assets/ABOUT/SectionTwo/about-banner.webp'
+import aboutBanner from '../../app/assets/HOMEPAGE/new-webps/about1.webp'
 
 const SectionTwo = () => {
   return (
@@ -21,7 +21,7 @@ What began as a bold idea has grown into a global community focused on collabora
             <div className='flex flex-col gap-5 md:gap-0 justify-between'>
               <div className='flex flex-col gap-2'>
                 <div className='flex items-center justify-between'>
-                  <h6 className='font-poppins text-primary text-2xl md:text-3xl lg:text-4xl font-semibold w-[50%]'>450+</h6>
+                  <h6 className='font-poppins text-primary text-2xl md:text-3xl lg:text-4xl font-semibold w-[50%]'>602+</h6>
                   <p className='font-normal text-lg lg:text-xl text-[#525252] w-[50%]'>Palliative Care<br />Physicians</p>
                 </div>
                 <div className='flex items-center justify-between'>

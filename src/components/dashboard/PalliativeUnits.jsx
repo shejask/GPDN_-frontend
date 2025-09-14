@@ -211,10 +211,25 @@ const PalliativeUnits = () => {
   };
 
   const handleCreateUnit = async () => {
+    // Validate form data
+    if (
+      !formData.name ||
+      !formData.state ||
+      !formData.country ||
+      !formData.services ||
+      !formData.contactDetails
+    ) {
+      message.error("Please fill in all required fields.");
+      return;
+    }
+
     setCreateLoading(true);
     try {
+      console.log("Form data being sent:", formData);
       const response = await createPalliativeUnit(formData);
-      if (response) {
+      console.log("Create unit response:", response);
+
+      if (response && response.success !== false) {
         message.success("Palliative unit created successfully!");
         setIsCreateModalOpen(false);
         setFormData({
@@ -225,22 +240,17 @@ const PalliativeUnits = () => {
           contactDetails: "",
         });
         // Refresh the list after creation
-        const refreshResponse = await fetchPalliativeUnits();
-        if (refreshResponse?.data) {
-          const units = Array.isArray(refreshResponse.data)
-            ? refreshResponse.data
-            : refreshResponse.data.data &&
-              Array.isArray(refreshResponse.data.data)
-            ? refreshResponse.data.data
-            : [refreshResponse.data];
-          setPalliativeUnits(units);
-        }
+        await fetchUnits();
       } else {
-        message.error("Failed to create palliative unit.");
+        const errorMessage =
+          response?.error || "Failed to create palliative unit.";
+        message.error(errorMessage);
+        console.error("Create unit failed:", response);
       }
     } catch (error) {
       console.error("Error creating palliative unit:", error);
-      message.error("Failed to create palliative unit.");
+      const errorMessage = error.message || "Failed to create palliative unit.";
+      message.error(errorMessage);
     } finally {
       setCreateLoading(false);
     }
@@ -882,6 +892,12 @@ const PalliativeUnits = () => {
                     label: service.service,
                   }))}
                   loading={services.length === 0}
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Select the services offered by this palliative unit

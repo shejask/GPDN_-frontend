@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { ArrowRightOutlined } from "@ant-design/icons";
-import { Input, Radio, Checkbox } from "antd";
+import { Input, Radio, Checkbox, Select } from "antd";
 
 function PalliativeCareInfo({ onContinue }) {
   const [formData, setFormData] = useState({
@@ -9,10 +9,30 @@ function PalliativeCareInfo({ onContinue }) {
     hasFormalTrainingInPalliativeCare: null,
     affiliatedPalliativeAssociations: "",
     specialInterestsInPalliativeCare: "",
+    specialInterestsOther: "",
     confirmedMedicalGraduate: false,
     agreedToGuidelines: false,
   });
   const [errors, setErrors] = useState({});
+
+  const specialInterestsOptions = [
+    { value: "Adult Palliative Care", label: "Adult Palliative Care" },
+    {
+      value: "Paediatric Palliative Care",
+      label: "Paediatric Palliative Care",
+    },
+    { value: "Neuro-palliative care", label: "Neuro-palliative care" },
+    { value: "Pulmonary palliative care", label: "Pulmonary palliative care" },
+    {
+      value: "Ethics / Legal in Palliative Care",
+      label: "Ethics / Legal in Palliative Care",
+    },
+    {
+      value: "Research in Palliative Care",
+      label: "Research in Palliative Care",
+    },
+    { value: "Other", label: "Other (please specify)" },
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +56,22 @@ function PalliativeCareInfo({ onContinue }) {
     }));
   };
 
+  const handleSpecialInterestsChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      specialInterestsInPalliativeCare: value,
+      specialInterestsOther:
+        value === "Other" ? prev.specialInterestsOther : "",
+    }));
+  };
+
+  const handleOtherSpecialInterestsChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      specialInterestsOther: e.target.value,
+    }));
+  };
+
   const validateForm = () => {
     let tempErrors = {};
     if (formData.hasFormalTrainingInPalliativeCare === null) {
@@ -46,9 +82,15 @@ function PalliativeCareInfo({ onContinue }) {
       tempErrors.affiliatedPalliativeAssociations =
         "Affiliated associations are required";
     }
-    if (!formData.specialInterestsInPalliativeCare.trim()) {
+    if (!formData.specialInterestsInPalliativeCare) {
       tempErrors.specialInterestsInPalliativeCare =
         "Special interests are required";
+    }
+    if (
+      formData.specialInterestsInPalliativeCare === "Other" &&
+      !formData.specialInterestsOther.trim()
+    ) {
+      tempErrors.specialInterestsOther = "Please specify your special interest";
     }
     if (!formData.bio.trim()) {
       tempErrors.bio = "Bio is required";
@@ -74,7 +116,9 @@ function PalliativeCareInfo({ onContinue }) {
         affiliatedPalliativeAssociations:
           formData.affiliatedPalliativeAssociations,
         specialInterestsInPalliativeCare:
-          formData.specialInterestsInPalliativeCare,
+          formData.specialInterestsInPalliativeCare === "Other"
+            ? formData.specialInterestsOther
+            : formData.specialInterestsInPalliativeCare,
       });
     }
   };
@@ -97,8 +141,12 @@ function PalliativeCareInfo({ onContinue }) {
             value={formData.hasFormalTrainingInPalliativeCare}
             className="flex flex-col gap-2"
           >
-            <Radio className=" hidden md:flex" value={true}>Yes</Radio>
-            <Radio className=" hidden md:flex" value={false}>No</Radio>
+            <Radio className=" hidden md:flex" value={true}>
+              Yes
+            </Radio>
+            <Radio className=" hidden md:flex" value={false}>
+              No
+            </Radio>
             <div className=" flex items-center gap-2 md:hidden">
               <Radio value={true}>Yes</Radio>
               <Radio value={false}>No</Radio>
@@ -134,19 +182,36 @@ function PalliativeCareInfo({ onContinue }) {
           <label className="text-sm font-semibold">
             Special Interests in Palliative Care
           </label>
-          <Input.TextArea
+          <Select
             size="large"
-            name="specialInterestsInPalliativeCare"
             value={formData.specialInterestsInPalliativeCare}
-            onChange={handleChange}
+            onChange={handleSpecialInterestsChange}
             className="w-96"
-            placeholder="e.g., Pain management, pediatric palliative care"
-            rows={3}
+            placeholder="Select your special interest"
+            options={specialInterestsOptions}
           />
           {errors.specialInterestsInPalliativeCare && (
             <span className="text-red-500 text-xs">
               {errors.specialInterestsInPalliativeCare}
             </span>
+          )}
+
+          {formData.specialInterestsInPalliativeCare === "Other" && (
+            <div className="flex flex-col gap-2 mt-2">
+              <Input
+                size="large"
+                name="specialInterestsOther"
+                value={formData.specialInterestsOther}
+                onChange={handleOtherSpecialInterestsChange}
+                className="w-96"
+                placeholder="Please specify"
+              />
+              {errors.specialInterestsOther && (
+                <span className="text-red-500 text-xs">
+                  {errors.specialInterestsOther}
+                </span>
+              )}
+            </div>
           )}
         </div>
 

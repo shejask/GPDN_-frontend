@@ -19,7 +19,7 @@ import {
   MdOutlineSettings,
 } from "react-icons/md";
 import { FaRegFolder } from "react-icons/fa6";
-import { TbUsers } from "react-icons/tb";
+import { TbUsers,TbUser } from "react-icons/tb";
 import { PiBuildings } from "react-icons/pi";
 import { IoNewspaperOutline } from "react-icons/io5";
 import { usePathname } from "next/navigation"; // Add this import
@@ -246,7 +246,7 @@ const ForumDiscussion = () => {
       link: "/palliative-units",
     },
     { menu: "News & Blogs", icon: <IoNewspaperOutline />, link: "/news-blogs" },
-    { menu: "Settings", icon: <MdOutlineSettings />, link: "/settings" },
+    { menu: "Profile", icon: <TbUser />, link: "/settings" },
   ];
 
   // ========================================================================
