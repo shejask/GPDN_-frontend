@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import bg from "../../app/assets/HOMEPAGE/new-webps/register-banner.webp";
+import bg from "../../app/assets/HOMEPAGE/new-webps/register-bannner.webp";
 import Image from "next/image";
 import Step from "@/components/registration/steps/page";
 import Personalnfo from "@/components/registration/tabs/personalnfo";
@@ -96,7 +96,7 @@ function Registration() {
   return (
     <div className="w-full flex h-screen">
       <div className="w-1/2 h-screen hidden md:block">
-        <Image alt="" src={bg} className="w-full h-full" />
+        <Image alt="" src={bg} className="w-full h-full object-cover" />
       </div>
       <div className="md:w-1/2 h-screen flex flex-col items-center justify-between px-5 py-5">
         <div className="w-full">
