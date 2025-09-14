@@ -158,13 +158,13 @@ const Footer = () => {
                 © 2025 GPDN. All Rights Reserved.
               </p>
               <div className=" justify-between gap-4 text-white text-sm lg:text-2xl hidden md:flex">
-                <a href="https://www.facebook.com/people/GPDN/61580332928136/">
+                <a href="https://www.facebook.com/people/GPDN/61580332928136/" target="_blank">
                   <RiFacebookCircleFill />
                 </a>
-                <a href="https://www.linkedin.com/groups/14850014/">
+                <a href="https://www.linkedin.com/groups/14850014/" target="_blank">
                   <RiLinkedinBoxFill />
                 </a>
-                <a href="https://www.instagram.com/thegpdn/">
+                <a href="https://www.instagram.com/thegpdn/" target="_blank">
                   <RiInstagramLine />
                 </a>
               </div>

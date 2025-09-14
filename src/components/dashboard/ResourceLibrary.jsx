@@ -264,6 +264,9 @@ const ResourceLibrary = () => {
               ? originalFilename
               : `${title || originalFilename}-${i + 1}.${fileExtension}`;
 
+            // Check if it's an image file
+            const isImage = isImageFile(file);
+
             try {
               const response = await fetch(fileURL);
               if (!response.ok) {
@@ -291,16 +294,35 @@ const ResourceLibrary = () => {
               }
             } catch (error) {
               console.error(`Error downloading file ${i + 1}:`, error);
-              // Try opening in new tab as fallback
-              window.open(fileURL, "_blank");
+              // For images, open in new tab as fallback
+              if (isImage) {
+                window.open(fileURL, "_blank", "noopener,noreferrer");
+                message.info(`Opening image ${i + 1} in new tab`);
+              } else {
+                // For non-images (like PDFs), try alternative download method
+                try {
+                  const a = document.createElement("a");
+                  a.href = fileURL;
+                  a.download = filename;
+                  a.rel = "noopener noreferrer";
+                  a.style.display = "none";
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => {
+                    document.body.removeChild(a);
+                  }, 100);
+                } catch (linkError) {
+                  window.open(fileURL, "_blank", "noopener,noreferrer");
+                }
+              }
             }
           }
 
-          message.success(`All ${files.length} files downloaded successfully`);
+          message.success(`All ${files.length} files processed successfully`);
           return;
         }
 
-        // Single file download (existing logic)
+        // Single file download
         const filePath = files[0];
         const isFullUrl =
           filePath.startsWith("http") || filePath.startsWith("https");
@@ -316,6 +338,9 @@ const ResourceLibrary = () => {
         const filename = originalFilename.includes(".")
           ? originalFilename
           : `${title || originalFilename}.${fileExtension}`;
+
+        // Check if it's an image file
+        const isImage = isImageFile(filePath);
 
         try {
           const response = await fetch(fileURL);
@@ -345,25 +370,31 @@ const ResourceLibrary = () => {
             fetchError
           );
 
-          // Fallback methods
-          try {
-            const a = document.createElement("a");
-            a.href = fileURL;
-            a.download = filename;
-            a.rel = "noopener noreferrer";
-            a.style.display = "none";
-            document.body.appendChild(a);
-            a.click();
+          // For images, open in new tab as fallback
+          if (isImage) {
+            window.open(fileURL, "_blank", "noopener,noreferrer");
+            message.success("Opening image in new tab");
+          } else {
+            // For non-images (like PDFs), try alternative download method
+            try {
+              const a = document.createElement("a");
+              a.href = fileURL;
+              a.download = filename;
+              a.rel = "noopener noreferrer";
+              a.style.display = "none";
+              document.body.appendChild(a);
+              a.click();
 
-            setTimeout(() => {
-              document.body.removeChild(a);
-            }, 100);
+              setTimeout(() => {
+                document.body.removeChild(a);
+              }, 100);
 
-            message.success("Download initiated");
-          } catch (linkError) {
-            console.error("Link download failed:", linkError);
-            window.open(fileURL, "_blank");
-            message.success("Opening file in new tab");
+              message.success("Download initiated");
+            } catch (linkError) {
+              console.error("Link download failed:", linkError);
+              window.open(fileURL, "_blank", "noopener,noreferrer");
+              message.success("Opening file in new tab");
+            }
           }
         }
       } catch (error) {
@@ -371,7 +402,7 @@ const ResourceLibrary = () => {
         message.error("Failed to download the file. Please try again later.");
       }
     },
-    [getImageUrl, getFileExtension]
+    [getImageUrl, getFileExtension, isImageFile]
   );
 
   const handleSearch = useCallback((value) => {
@@ -573,30 +604,55 @@ const ResourceLibrary = () => {
           ? originalFilename
           : `${title || originalFilename}-${index + 1}.${fileExtension}`;
 
-        const response = await fetch(fileURL);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to download the image first
+        try {
+          const response = await fetch(fileURL);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.style.display = "none";
+
+          document.body.appendChild(a);
+          a.click();
+
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }, 100);
+
+          message.success("Image downloaded successfully");
+        } catch (downloadError) {
+          console.log(
+            "Download failed, opening image in new tab:",
+            downloadError
+          );
+          // If download fails, open the image in a new tab
+          window.open(fileURL, "_blank", "noopener,noreferrer");
+          message.success("Opening image in new tab");
         }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.style.display = "none";
-
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        }, 100);
-
-        message.success("Image downloaded successfully");
       } catch (error) {
-        console.error("Error downloading image:", error);
-        message.error("Failed to download the image. Please try again later.");
+        console.error("Error with image download:", error);
+        // Final fallback - try to open the image URL directly
+        try {
+          const isFullUrl =
+            filePath.startsWith("http") || filePath.startsWith("https");
+          const fileURL = isFullUrl ? filePath : getImageUrl(filePath);
+          if (fileURL) {
+            window.open(fileURL, "_blank", "noopener,noreferrer");
+            message.success("Opening image in new tab");
+          } else {
+            message.error("Unable to access the image");
+          }
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError);
+          message.error("Unable to access the image");
+        }
       }
     },
     [getImageUrl, getFileExtension]

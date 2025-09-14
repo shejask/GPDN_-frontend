@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import bg from "../../app/assets/signin/bg.png";
+import bg from "../../app/assets/HOMEPAGE/new-webps/login-banner.webp";
 import Image from "next/image";
 import { Input, message as antMessage } from "antd";
 import { PiSignInBold } from "react-icons/pi";

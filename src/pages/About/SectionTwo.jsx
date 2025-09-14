@@ -25,7 +25,7 @@ What began as a bold idea has grown into a global community focused on collabora
                   <p className='font-normal text-lg lg:text-xl text-[#525252] w-[50%]'>Palliative Care<br />Physicians</p>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <h6 className='font-poppins text-primary text-2xl md:text-3xl lg:text-4xl font-semibold w-[50%]'>80+</h6>
+                  <h6 className='font-poppins text-primary text-2xl md:text-3xl lg:text-4xl font-semibold w-[50%]'>83+</h6>
                   <p className='font-normal text-lg lg:text-xl text-[#525252] w-[50%]'>Countries &<br />Growing</p>
                 </div>
                 <div className='flex items-center justify-between'>

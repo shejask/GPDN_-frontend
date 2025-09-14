@@ -963,7 +963,7 @@ const CreatePost = () => {
                 </div>
 
                 {/* Predefined Tags */}
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
                     {[
                       "AI/ML",
@@ -1004,7 +1004,7 @@ const CreatePost = () => {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Add Custom Tag Input */}
                 <div className="mt-4 flex gap-2">

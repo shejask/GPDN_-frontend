@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import bg from "../assets/signin/registrationBg.png";
+import bg from "../../app/assets/HOMEPAGE/new-webps/register-banner.webp";
 import Image from "next/image";
 import Step from "@/components/registration/steps/page";
 import Personalnfo from "@/components/registration/tabs/personalnfo";

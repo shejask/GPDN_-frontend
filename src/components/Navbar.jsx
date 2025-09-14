@@ -59,7 +59,7 @@ const Navbar = () => {
             href="/signin"
             className="bg-teal-500 hover:bg-[#039187] cursor-pointer transition-all duration-300 ease-in text-white text-sm font-poppins py-3 px-5 rounded-xl hidden items-center justify-around md:flex gap-2"
           >
-            Sign in
+            Sign In
             <GoChevronRight className="text-xl" />
           </Link>
         </div>
