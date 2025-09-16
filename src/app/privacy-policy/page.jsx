@@ -191,14 +191,14 @@ const PrivacyPolicy = () => {
                 <span className="text-2xl">✉️</span>
                 <div className="text-left">
                   <p className="text-white/80 text-sm">Email</p>
-                  <p className="text-white font-semibold">info@gpdn.com</p>
+                  <p className="text-white font-semibold">gpdnofficial@gmail.com</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg px-6 py-4">
                 <span className="text-2xl">🌐</span>
                 <div className="text-left">
                   <p className="text-white/80 text-sm">Website</p>
-                  <p className="text-white font-semibold">www.gpdn.com</p>
+                  <p className="text-white font-semibold">www.thegpdn.org</p>
                 </div>
               </div>
             </div>

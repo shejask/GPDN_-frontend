@@ -8,7 +8,7 @@ function PalliativeCareInfo({ onContinue }) {
     bio: "",
     hasFormalTrainingInPalliativeCare: null,
     affiliatedPalliativeAssociations: "",
-    specialInterestsInPalliativeCare: "",
+    specialInterestsInPalliativeCare: [],
     specialInterestsOther: "",
     confirmedMedicalGraduate: false,
     agreedToGuidelines: false,
@@ -60,8 +60,9 @@ function PalliativeCareInfo({ onContinue }) {
     setFormData((prev) => ({
       ...prev,
       specialInterestsInPalliativeCare: value,
-      specialInterestsOther:
-        value === "Other" ? prev.specialInterestsOther : "",
+      specialInterestsOther: value.includes("Other")
+        ? prev.specialInterestsOther
+        : "",
     }));
   };
 
@@ -82,12 +83,15 @@ function PalliativeCareInfo({ onContinue }) {
       tempErrors.affiliatedPalliativeAssociations =
         "Affiliated associations are required";
     }
-    if (!formData.specialInterestsInPalliativeCare) {
+    if (
+      !formData.specialInterestsInPalliativeCare ||
+      formData.specialInterestsInPalliativeCare.length === 0
+    ) {
       tempErrors.specialInterestsInPalliativeCare =
         "Special interests are required";
     }
     if (
-      formData.specialInterestsInPalliativeCare === "Other" &&
+      formData.specialInterestsInPalliativeCare.includes("Other") &&
       !formData.specialInterestsOther.trim()
     ) {
       tempErrors.specialInterestsOther = "Please specify your special interest";
@@ -109,16 +113,28 @@ function PalliativeCareInfo({ onContinue }) {
 
   const handleSubmit = () => {
     if (validateForm()) {
+      // Process special interests array - replace "Other" with the custom value if present
+      let processedSpecialInterests = [
+        ...formData.specialInterestsInPalliativeCare,
+      ];
+      if (
+        processedSpecialInterests.includes("Other") &&
+        formData.specialInterestsOther.trim()
+      ) {
+        // Remove "Other" and add the custom value
+        processedSpecialInterests = processedSpecialInterests.filter(
+          (item) => item !== "Other"
+        );
+        processedSpecialInterests.push(formData.specialInterestsOther.trim());
+      }
+
       onContinue({
         bio: formData.bio,
         hasFormalTrainingInPalliativeCare:
           formData.hasFormalTrainingInPalliativeCare,
         affiliatedPalliativeAssociations:
           formData.affiliatedPalliativeAssociations,
-        specialInterestsInPalliativeCare:
-          formData.specialInterestsInPalliativeCare === "Other"
-            ? formData.specialInterestsOther
-            : formData.specialInterestsInPalliativeCare,
+        specialInterestsInPalliativeCare: processedSpecialInterests,
       });
     }
   };
@@ -183,12 +199,14 @@ function PalliativeCareInfo({ onContinue }) {
             Special Interests in Palliative Care
           </label>
           <Select
+            mode="multiple"
             size="large"
             value={formData.specialInterestsInPalliativeCare}
             onChange={handleSpecialInterestsChange}
             className="w-96"
-            placeholder="Select your special interest"
+            placeholder="Select your special interests"
             options={specialInterestsOptions}
+            maxTagCount="responsive"
           />
           {errors.specialInterestsInPalliativeCare && (
             <span className="text-red-500 text-xs">
@@ -196,7 +214,7 @@ function PalliativeCareInfo({ onContinue }) {
             </span>
           )}
 
-          {formData.specialInterestsInPalliativeCare === "Other" && (
+          {formData.specialInterestsInPalliativeCare.includes("Other") && (
             <div className="flex flex-col gap-2 mt-2">
               <Input
                 size="large"
@@ -204,7 +222,7 @@ function PalliativeCareInfo({ onContinue }) {
                 value={formData.specialInterestsOther}
                 onChange={handleOtherSpecialInterestsChange}
                 className="w-96"
-                placeholder="Please specify"
+                placeholder="Please specify your other special interest"
               />
               {errors.specialInterestsOther && (
                 <span className="text-red-500 text-xs">

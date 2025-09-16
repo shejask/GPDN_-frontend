@@ -166,42 +166,50 @@ export const teamMembersData = [
   {
     name: "Dr. Mujeeb Rahman",
     qualification: "Founder & CEO Graperoject",
+    nationality: "India",
     profileImage: memeberProfile1,
   },
   {
     name: "Dr. Shafika Banoo",
     qualification: "MD Gen Med (MGMC, Puducherry)",
+    nationality: "United Kingdom",
     profileImage: memeberProfile2,
   },
   {
-    name: "Dr. Beatrice Dorsey Rivera",
+    name: "Dr. Beatriz Dorsey Rivera",
     qualification: "MD, MsC",
+    nationality: "Mexico",
     profileImage: memeberProfile3,
   },
   {
     name: "Dr. Noorjehan Begum",
     qualification: "MD Gen Med (MGMC, Puducherry)",
+    nationality: "Bangladesh",
     profileImage: memeberProfile6,
   },
   {
     name: "Dr. Maria Madeline Baylon-Mallillin",
     qualification: "Founder & CEO Graperoject",
+    nationality: "Philippines",
     profileImage: memeberProfile5,
   },
 
   {
     name: "Dr. Jairam Kamala Ramakrishnan",
     qualification: "MD",
+    nationality: "New Zealand",
     profileImage: memeberProfile4,
   },
   {
     name: "Dr. Preeya Desh",
     qualification: "MD, MsC",
+    nationality: "United States of America",
     profileImage: memeberProfile7,
   },
   {
     name: "Dr. Thiloshini Govender",
     qualification: "MD",
+    nationality: "South Africa",
     profileImage: memeberProfile8,
   },
 ];
@@ -228,9 +236,6 @@ export const footerLinksData = [
 
   {
     heading: "Contact Us",
-    links: [
-      { title: "Email", det: "info@thegpdn.com", icon: "email" },
-      { title: "Phone", det: "91-9876543210", icon: "phone" },
-    ],
+    links: [{ title: "Email", det: "gpdnofficial@gmail.com", icon: "email" }],
   },
 ];

@@ -1,25 +1,22 @@
-import Navbar from '@/components/Navbar'
-import BlogDetails from '@/pages/Blog/FullBlog/BlogDetails'
-import RelatedBlogs from '@/pages/Blog/FullBlog/RelatedBlogs'
-import Footer from '@/pages/Home/Footer'
-import React from 'react'
+import Navbar from "@/components/Navbar";
+import BlogDetails from "@/pages/Blog/FullBlog/BlogDetails";
+import RelatedBlogs from "@/pages/Blog/FullBlog/RelatedBlogs";
+import Footer from "@/pages/Home/Footer";
+import React from "react";
 
-const page = async ({params}) => {
-
-    const {blogId} = await params ;
+const page = async ({ params }) => {
+  const { blogId } = await params;
 
   return (
-    <main className="flex  flex-col items-center gap-20">
-      <div className="flex w-full  flex-col items-center justify-between gap-20 px-7 md:px-16 lg:px-20 2xl:px-40">
-      <div className="h-auto  w-full flex flex-col gap-20 justify-between pt-8 ">
-      <Navbar/>
-      <BlogDetails blogId={blogId}/>
+    <main className="min-h-screen bg-gray-50">
+      <div className="md:p-5 md:px-10 p-5">
+        <Navbar />
       </div>
-    <RelatedBlogs blogId={blogId}/> 
-      </div>
-      <Footer/> 
+      <BlogDetails blogId={blogId} />
+      {/* <RelatedBlogs blogId={blogId} /> */}
+      <Footer />
     </main>
-  )
-}
+  );
+};
 
-export default page
+export default page;

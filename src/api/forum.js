@@ -120,7 +120,30 @@ export const createThread = async (threadData) => {
   try {
     // Handle file upload if present
     let formData;
-    if (threadData.file) {
+    if (
+      threadData.file &&
+      Array.isArray(threadData.file) &&
+      threadData.file.length > 0
+    ) {
+      formData = new FormData();
+      Object.entries(threadData).forEach(([key, value]) => {
+        if (key === "file") {
+          // Handle multiple files - append each file with the same "file" key
+          value.forEach((file, index) => {
+            formData.append(`file`, file);
+          });
+        } else if (key === "tags") {
+          // Ensure tags are always sent as a clean JSON array
+          const tagsArray = Array.isArray(value) ? value : [value];
+          formData.append("tags", JSON.stringify(tagsArray));
+          console.log("Formatted Tags:", JSON.stringify(tagsArray));
+          console.log(typeof tagsArray);
+        } else {
+          formData.append(key, value);
+        }
+      });
+    } else if (threadData.file && !Array.isArray(threadData.file)) {
+      // Handle single file for backward compatibility
       formData = new FormData();
       Object.entries(threadData).forEach(([key, value]) => {
         if (key === "file") {
@@ -130,15 +153,12 @@ export const createThread = async (threadData) => {
           const tagsArray = Array.isArray(value) ? value : [value];
           formData.append("tags", JSON.stringify(tagsArray));
           console.log("Formatted Tags:", JSON.stringify(tagsArray));
-          console.log(typeof(tagsArray));
-          
+          console.log(typeof tagsArray);
         } else {
           formData.append(key, value);
         }
       });
     }
-
-
 
     // Ensure tags are properly formatted in the request body when not using FormData
     let requestData = formData;
@@ -165,7 +185,6 @@ export const createThread = async (threadData) => {
     );
 
     console.log(response.data);
-    
 
     return formatResponse(response);
   } catch (error) {

@@ -49,7 +49,7 @@ const SectionOne = () => {
                   <div>
                     <div className="flex ">
                       <Link
-                        href={`/about`}
+                        href={`/registration`}
                         className="bg-primary  hover:bg-[#039187] cursor-pointer transition-all duration-300 ease-in text-white text-base 2xl:text-xl font-poppins py-4 px-6 rounded-xl flex items-center justify-around gap-2"
                       >
                         Join the Network

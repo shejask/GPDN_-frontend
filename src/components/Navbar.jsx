@@ -24,9 +24,12 @@ const Navbar = () => {
       <div className="w-full flex justify-between items-center">
         {/* ----- Logo and Navlinks------- */}
         <div className="flex justify-between items-center gap-16">
-          <div className="w-32">
-            <Image className="w-full" alt="Img" src={logoGpdn} />
-          </div>
+          <Link href={"/"}>
+            <div className="w-32">
+              <Image className="w-full" alt="Img" src={logoGpdn} />
+            </div>
+          </Link>
+
           <div className="font-normal text-[#0C0E12] text-lg  justify-between gap-8  hidden md:flex">
             <Link href={"/"}>
               <button className="">Home</button>

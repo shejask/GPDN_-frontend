@@ -290,13 +290,23 @@ ProfessionalRichTextEditor.displayName = "ProfessionalRichTextEditor";
 
 // Constants for validation
 const MAX_TITLE_LENGTH = 100;
-const MAX_FILE_SIZE_MB = 2; // Reduced from 5MB to 2MB to avoid 413 errors
+const MAX_FILE_SIZE_MB = 5; // Increased back to 5MB for multiple files
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
   "image/png",
   "image/svg+xml",
   "image/webp",
+  "image/gif",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ];
+const MAX_FILES = 10; // Maximum number of files allowed
 const MAX_TAGS = 10;
 
 /**
@@ -312,8 +322,8 @@ const CreatePost = () => {
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
-  const [file, setFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [filePreviews, setFilePreviews] = useState([]);
   const [description, setDescription] = useState("");
   const [userId, setUserId] = useState(null);
 
@@ -382,11 +392,19 @@ const CreatePost = () => {
         break;
 
       case "file":
-        if (value) {
-          if (!ALLOWED_FILE_TYPES.includes(value.type)) {
-            errorMessage = "File must be JPEG, PNG, SVG, or WebP";
-          } else if (value.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-            errorMessage = `File size must be less than ${MAX_FILE_SIZE_MB}MB`;
+        if (value && value.length > 0) {
+          if (value.length > MAX_FILES) {
+            errorMessage = `Maximum ${MAX_FILES} files allowed`;
+          } else {
+            for (const file of value) {
+              if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+                errorMessage = `File type ${file.type} is not supported`;
+                break;
+              } else if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                errorMessage = `File ${file.name} must be less than ${MAX_FILE_SIZE_MB}MB`;
+                break;
+              }
+            }
           }
         }
         break;
@@ -426,11 +444,11 @@ const CreatePost = () => {
   const validateForm = useCallback(() => {
     const titleError = validateField("title", title);
     const descriptionError = validateField("description", description);
-    const fileError = validateField("file", file);
+    const filesError = validateField("files", files);
     const tagsError = validateField("tags", selectedTags);
 
-    return !titleError && !descriptionError && !fileError && !tagsError;
-  }, [title, description, file, selectedTags, validateField]);
+    return !titleError && !descriptionError && !filesError && !tagsError;
+  }, [title, description, files, selectedTags, validateField]);
 
   /**
    * Handle tag selection from available tags
@@ -511,37 +529,71 @@ const CreatePost = () => {
 
   /**
    * Handle file selection and validation
-   * @param {File} selectedFile - Selected file
+   * @param {FileList} selectedFiles - Selected files
    */
   const handleFileSelect = useCallback(
-    (selectedFile) => {
-      if (!selectedFile) return;
+    (selectedFiles) => {
+      if (!selectedFiles || selectedFiles.length === 0) return;
 
-      const error = validateField("file", selectedFile);
+      const fileArray = Array.from(selectedFiles);
+      const newFiles = [...files, ...fileArray];
+
+      const error = validateField("files", newFiles);
       if (!error) {
-        // Check if file needs compression
-        if (selectedFile.size > 1 * 1024 * 1024) {
-          // If larger than 1MB
-          messageApi.info("Compressing image to reduce size...");
-          compressImage(selectedFile);
-        } else {
-          setFile(selectedFile);
+        setFiles(newFiles);
 
-          // Create preview URL for the image
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setFilePreview(reader.result);
-          };
-          reader.readAsDataURL(selectedFile);
-        }
+        // Create previews for new files
+        fileArray.forEach((file) => {
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setFilePreviews((prev) => [
+                ...prev,
+                {
+                  file,
+                  preview: reader.result,
+                  type: "image",
+                },
+              ]);
+            };
+            reader.readAsDataURL(file);
+          } else {
+            setFilePreviews((prev) => [
+              ...prev,
+              {
+                file,
+                preview: null,
+                type: getFileType(file.type),
+              },
+            ]);
+          }
+        });
       } else {
         messageApi.error(error);
       }
 
       setFormTouched(true);
     },
-    [validateField, messageApi]
+    [files, validateField, messageApi]
   );
+
+  /**
+   * Get file type icon based on MIME type
+   * @param {string} mimeType - File MIME type
+   * @returns {string} - File type category
+   */
+  const getFileType = useCallback((mimeType) => {
+    if (mimeType.startsWith("image/")) return "image";
+    if (mimeType.includes("pdf")) return "pdf";
+    if (mimeType.includes("word") || mimeType.includes("document"))
+      return "document";
+    if (mimeType.includes("excel") || mimeType.includes("spreadsheet"))
+      return "spreadsheet";
+    if (mimeType.includes("powerpoint") || mimeType.includes("presentation"))
+      return "presentation";
+    if (mimeType.includes("text/")) return "text";
+    return "file";
+  }, []);
 
   /**
    * Compress image to reduce file size
@@ -611,14 +663,24 @@ const CreatePost = () => {
   );
 
   /**
+   * Remove a file from the files array
+   * @param {number} index - Index of file to remove
+   */
+  const removeFile = useCallback((index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFilePreviews((prev) => prev.filter((_, i) => i !== index));
+    setFormTouched(true);
+  }, []);
+
+  /**
    * Reset form to initial state
    */
   const resetForm = useCallback(() => {
     setTitle("");
     setSelectedTags([]);
     setTagInput("");
-    setFile(null);
-    setFilePreview(null);
+    setFiles([]);
+    setFilePreviews([]);
     setDescription("");
     setErrors({});
     setFormTouched(false);
@@ -836,35 +898,36 @@ const CreatePost = () => {
                 )}
               </div>
 
-              {/* Upload Thumbnail Section */}
+              {/* Upload Files Section */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Thumbnail
+                  Upload Files ({files.length}/{MAX_FILES})
                 </label>
                 <div
                   className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    const droppedFile = e.dataTransfer.files[0];
-                    if (droppedFile && droppedFile.type.startsWith("image/")) {
-                      handleFileSelect(droppedFile);
-                    } else {
-                      messageApi.error("Please upload an image file");
+                    const droppedFiles = e.dataTransfer.files;
+                    if (droppedFiles.length > 0) {
+                      handleFileSelect(droppedFiles);
                     }
                   }}
                 >
                   <input
                     type="file"
-                    accept="image/*"
+                    multiple
+                    accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                     className="hidden"
-                    id="thumbnail-upload"
+                    id="files-upload"
                     onChange={(e) => {
-                      const selectedFile = e.target.files[0];
-                      if (selectedFile) handleFileSelect(selectedFile);
+                      const selectedFiles = e.target.files;
+                      if (selectedFiles.length > 0) {
+                        handleFileSelect(selectedFiles);
+                      }
                     }}
                   />
-                  <label htmlFor="thumbnail-upload" className="cursor-pointer">
+                  <label htmlFor="files-upload" className="cursor-pointer">
                     <div className="flex flex-col items-center">
                       <svg
                         className="w-12 h-12 text-blue-400 mb-3"
@@ -881,30 +944,157 @@ const CreatePost = () => {
                       </svg>
                       <p className="text-blue-600 font-medium">Click here</p>
                       <p className="text-sm text-gray-600">
-                        to upload your file or drag.
+                        to upload files or drag and drop
                       </p>
                       <p className="text-xs text-gray-400 mt-2">
-                        Supported Format: SVG, JPG, PNG (10mb each)
+                        Supported: Images, PDF, DOC, DOCX, TXT, XLS, XLSX, PPT,
+                        PPTX (Max {MAX_FILE_SIZE_MB}MB each)
                       </p>
                     </div>
                   </label>
-                  {file && (
-                    <div className="mt-4">
-                      <div className="text-sm text-gray-600 mb-2">
-                        Selected: {file.name}
-                      </div>
-                      {filePreview && (
-                        <img
-                          src={filePreview}
-                          alt="Preview"
-                          className="max-w-xs max-h-48 rounded-lg mx-auto"
-                        />
-                      )}
-                    </div>
-                  )}
                 </div>
-                {errors.file && (
-                  <p className="text-red-500 text-sm mt-1">{errors.file}</p>
+
+                {/* File Previews */}
+                {filePreviews.length > 0 && (
+                  <div className="mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {filePreviews.map((filePreview, index) => (
+                        <div
+                          key={index}
+                          className="relative bg-white border border-gray-200 rounded-lg p-3 shadow-sm"
+                        >
+                          <button
+                            onClick={() => removeFile(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                          >
+                            ×
+                          </button>
+
+                          {filePreview.type === "image" &&
+                          filePreview.preview ? (
+                            <div className="text-center">
+                              <img
+                                src={filePreview.preview}
+                                alt={filePreview.file.name}
+                                className="w-full h-20 object-cover rounded mb-2"
+                              />
+                              <p
+                                className="text-xs text-gray-600 truncate"
+                                title={filePreview.file.name}
+                              >
+                                {filePreview.file.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {(filePreview.file.size / 1024 / 1024).toFixed(
+                                  1
+                                )}{" "}
+                                MB
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <div className="w-full h-20 bg-gray-100 rounded mb-2 flex items-center justify-center">
+                                {filePreview.type === "pdf" && (
+                                  <svg
+                                    className="w-8 h-8 text-red-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                                {filePreview.type === "document" && (
+                                  <svg
+                                    className="w-8 h-8 text-blue-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                                {filePreview.type === "spreadsheet" && (
+                                  <svg
+                                    className="w-8 h-8 text-green-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                                {filePreview.type === "presentation" && (
+                                  <svg
+                                    className="w-8 h-8 text-orange-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                                {filePreview.type === "text" && (
+                                  <svg
+                                    className="w-8 h-8 text-gray-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                                {filePreview.type === "file" && (
+                                  <svg
+                                    className="w-8 h-8 text-gray-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              <p
+                                className="text-xs text-gray-600 truncate"
+                                title={filePreview.file.name}
+                              >
+                                {filePreview.file.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {(filePreview.file.size / 1024 / 1024).toFixed(
+                                  1
+                                )}{" "}
+                                MB
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {errors.files && (
+                  <p className="text-red-500 text-sm mt-1">{errors.files}</p>
                 )}
               </div>
 
@@ -1078,7 +1268,7 @@ const CreatePost = () => {
                         content: editorRef.current?.getContent() || "",
                         authorId: userId,
                         tags: selectedTags,
-                        file,
+                        file: files,
                       });
 
                       if (response.success) {

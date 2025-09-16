@@ -14,11 +14,14 @@ import {
   FaRegEdit,
   FaTimes,
   FaPlus,
+  FaDownload,
+  FaFile,
 } from "react-icons/fa";
 import { IoSearchOutline } from "react-icons/io5";
 import { Modal, Spin, Input, message, Button, Tag } from "antd";
 import Link from "next/link";
 import azeem from "../../app/assets/registation/Frame.png";
+import logo from "../../app/assets/registation/logo.png";
 import { fetchThreads, deleteThread } from "../../api/forum";
 import dynamic from "next/dynamic";
 
@@ -68,8 +71,10 @@ const UserDiscussions = () => {
   const [editForm, setEditForm] = useState({
     title: "",
     content: "",
-    tags: [], // Changed from string to array
-    file: null,
+    tags: [],
+    files: [], // New files to upload
+    existingFiles: [], // Existing files from API
+    filesToRemove: [], // Files marked for removal
   });
   const [editLoading, setEditLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -80,8 +85,33 @@ const UserDiscussions = () => {
   const [suggestedTags, setSuggestedTags] = useState([]);
 
   // For edit modal rich text
-  const [existingFile, setExistingFile] = useState(null);
   const richTextRef = React.useRef();
+
+  // Helper function to determine file type
+  const getFileType = useCallback((url) => {
+    if (!url) return "unknown";
+    const extension = url.split(".").pop().toLowerCase();
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
+    const documentExtensions = ["pdf", "doc", "docx", "txt", "rtf"];
+
+    if (imageExtensions.includes(extension)) return "image";
+    if (documentExtensions.includes(extension)) return "document";
+    return "file";
+  }, []);
+
+  // Helper function to get file name from URL
+  const getFileName = useCallback((url) => {
+    if (!url) return "Unknown file";
+    try {
+      const parts = url.split("/");
+      const filename = parts[parts.length - 1];
+      // Remove the timestamp prefix if it exists (e.g., "1758031204542-37715483-")
+      const cleanName = filename.replace(/^\d+-\d+-/, "");
+      return decodeURIComponent(cleanName);
+    } catch (error) {
+      return "Unknown file";
+    }
+  }, []);
 
   // Helper function to parse thread tags
   const parseThreadTags = useCallback((tags) => {
@@ -165,6 +195,38 @@ const UserDiscussions = () => {
     }
   };
 
+  // File management functions
+  const handleFileSelection = (files) => {
+    const fileArray = Array.from(files);
+    setEditForm((prev) => ({
+      ...prev,
+      files: [...prev.files, ...fileArray],
+    }));
+  };
+
+  const removeNewFile = (indexToRemove) => {
+    setEditForm((prev) => ({
+      ...prev,
+      files: prev.files.filter((_, index) => index !== indexToRemove),
+    }));
+  };
+
+  const markFileForRemoval = (fileUrl) => {
+    setEditForm((prev) => ({
+      ...prev,
+      filesToRemove: [...prev.filesToRemove, fileUrl],
+      existingFiles: prev.existingFiles.filter((file) => file !== fileUrl),
+    }));
+  };
+
+  const restoreRemovedFile = (fileUrl) => {
+    setEditForm((prev) => ({
+      ...prev,
+      filesToRemove: prev.filesToRemove.filter((file) => file !== fileUrl),
+      existingFiles: [...prev.existingFiles, fileUrl],
+    }));
+  };
+
   // Data loading
   const loadUserDiscussions = useCallback(async () => {
     try {
@@ -204,13 +266,14 @@ const UserDiscussions = () => {
           id: thread._id,
           title: thread.title,
           content: stripHtml(thread.content),
+          rawContent: thread.content, // Keep raw HTML for editing
           createdAt: thread.createdAt,
           upvotes: thread.upVote?.length || 0,
           downvotes: thread.downVote?.length || 0,
           comments: thread.comments?.length || 0,
           shares: thread.shares || 0,
           tags: parseThreadTags(thread.tags),
-          thumbnail: thread.thumbnail || null,
+          thumbnail: Array.isArray(thread.thumbnail) ? thread.thumbnail : [],
           authorId: thread.authorId,
           category: thread.category || "",
         }));
@@ -285,17 +348,18 @@ const UserDiscussions = () => {
     setEditForm({
       title: discussion.title,
       content: discussion.content,
-      tags: discussion.tags || [], // Keep as array
-      file: null,
+      tags: discussion.tags || [],
+      files: [], // New files to upload
+      existingFiles: [...(discussion.thumbnail || [])], // Copy existing files
+      filesToRemove: [], // Files marked for removal
     });
-    setExistingFile(discussion.thumbnail || null);
     setTagInput(""); // Reset tag input
     setSuggestedTags([]); // Reset suggestions
     setEditModalVisible(true);
     setTimeout(() => {
-      if (richTextRef.current && discussion.content) {
+      if (richTextRef.current && discussion.rawContent) {
         richTextRef.current.setContent
-          ? richTextRef.current.setContent(discussion.content)
+          ? richTextRef.current.setContent(discussion.rawContent)
           : null;
       }
     }, 200);
@@ -317,10 +381,14 @@ const UserDiscussions = () => {
       // Send tags as JSON string array
       formData.append("tags", JSON.stringify(editForm.tags));
 
-      if (editForm.file) {
-        formData.append("file", editForm.file);
-      } else if (existingFile) {
-        formData.append("existingFile", existingFile);
+      // Add new files
+      for (let i = 0; i < editForm.files.length; i++) {
+        formData.append("file", editForm.files[i]);
+      }
+
+      // Add files to remove
+      for (let i = 0; i < editForm.filesToRemove.length; i++) {
+        formData.append("removeFiles", editForm.filesToRemove[i]);
       }
 
       const response = await fetch(
@@ -336,7 +404,6 @@ const UserDiscussions = () => {
         message.success("Discussion updated successfully!");
         setEditModalVisible(false);
         setDiscussionToEdit(null);
-        setExistingFile(null);
         setTagInput("");
         setSuggestedTags([]);
         loadUserDiscussions();
@@ -433,6 +500,126 @@ const UserDiscussions = () => {
     </div>
   );
 
+  const renderFilePreview = (fileUrl, isRemovable = false, onRemove = null) => {
+    const fileType = getFileType(fileUrl);
+    const fileName = getFileName(fileUrl);
+
+    if (fileType === "image") {
+      return (
+        <div className="relative group bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="aspect-square relative">
+            <img
+              src={fileUrl}
+              alt={fileName}
+              className="w-full h-full object-cover"
+            />
+            {/* Overlay with view button */}
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white text-gray-700 p-2 rounded-full shadow-lg hover:bg-gray-50"
+              >
+                <FaEye className="text-sm" />
+              </a>
+            </div>
+            {/* Remove button */}
+            {isRemovable && onRemove && (
+              <button
+                type="button"
+                onClick={() => onRemove(fileUrl)}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 shadow-lg"
+              >
+                <FaTimes className="text-xs" />
+              </button>
+            )}
+          </div>
+          {/* File name */}
+          <div className="p-2">
+            <p
+              className="text-xs text-gray-600 truncate font-medium"
+              title={fileName}
+            >
+              {fileName}
+            </p>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="relative group bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex items-start gap-3">
+            {/* File icon */}
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                {fileType === "document" ? (
+                  <svg
+                    className="w-5 h-5 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : fileType === "pdf" ? (
+                  <svg
+                    className="w-5 h-5 text-red-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <FaFile className="w-5 h-5 text-gray-500" />
+                )}
+              </div>
+            </div>
+
+            {/* File info */}
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-sm font-medium text-gray-900 truncate"
+                title={fileName}
+              >
+                {fileName}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+                >
+                  <FaDownload className="text-xs" />
+                  Download
+                </a>
+              </div>
+            </div>
+
+            {/* Remove button */}
+            {isRemovable && onRemove && (
+              <button
+                type="button"
+                onClick={() => onRemove(fileUrl)}
+                className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50"
+              >
+                <FaTimes className="text-sm" />
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+  };
+
   const renderDiscussionCard = (discussion) => (
     <div
       key={discussion.id}
@@ -480,6 +667,9 @@ const UserDiscussions = () => {
 
       {/* Content */}
       <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          {discussion.title}
+        </h2>
         <p className="text-gray-700 leading-relaxed mb-4 md:w-4/5">
           {discussion.content}
         </p>
@@ -499,19 +689,23 @@ const UserDiscussions = () => {
         </div>
       )}
 
-      {/* Thumbnail */}
-      {discussion.thumbnail && (
-        <div className="mb-4">
-          <div className="rounded-lg overflow-hidden">
-            <img
-              src={discussion.thumbnail}
-              alt={discussion.title}
-              className="w-full md:w-96 rounded-lg"
-              style={{
-                maxHeight: "300px",
-                objectFit: "cover",
-              }}
-            />
+      {/* Files and Images */}
+      {discussion.thumbnail && discussion.thumbnail.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 bg-[#00A99D] rounded-full"></div>
+            <h4 className="text-sm font-semibold text-gray-700">Attachments</h4>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+              {discussion.thumbnail.length} file
+              {discussion.thumbnail.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {discussion.thumbnail.map((fileUrl, index) => (
+              <div key={index} className="w-full">
+                {renderFilePreview(fileUrl)}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -679,6 +873,144 @@ const UserDiscussions = () => {
     </div>
   );
 
+  // File management component for edit modal
+  const renderFileManagement = () => (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <div className="w-1 h-4 bg-[#00A99D] rounded-full"></div>
+        <label className="text-sm font-semibold text-gray-700">
+          Files & Images
+        </label>
+      </div>
+
+      {/* Existing Files */}
+      {editForm.existingFiles.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium text-gray-600">Current Files</h4>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+              {editForm.existingFiles.length} file
+              {editForm.existingFiles.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {editForm.existingFiles.map((fileUrl, index) => (
+              <div key={index} className="w-full">
+                {renderFilePreview(fileUrl, true, markFileForRemoval)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Files marked for removal */}
+      {editForm.filesToRemove.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium text-red-600">
+              Files to be removed
+            </h4>
+            <span className="text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">
+              {editForm.filesToRemove.length} file
+              {editForm.filesToRemove.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {editForm.filesToRemove.map((fileUrl, index) => (
+              <div key={index} className="relative w-full">
+                <div className="opacity-60">{renderFilePreview(fileUrl)}</div>
+                <div className="absolute inset-0 bg-red-500 bg-opacity-10 rounded-xl flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => restoreRemovedFile(fileUrl)}
+                    className="bg-white text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-50 shadow-sm border border-red-200"
+                  >
+                    Restore
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* New Files */}
+      {editForm.files.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium text-green-600">
+              New Files to Upload
+            </h4>
+            <span className="text-xs text-green-500 bg-green-100 px-2 py-1 rounded-full">
+              {editForm.files.length} file
+              {editForm.files.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {editForm.files.map((file, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <FaFile className="text-green-600 text-sm" />
+                  </div>
+                  <div>
+                    <span className="text-sm text-green-700 font-medium">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-green-500 ml-2">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeNewFile(index)}
+                  className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                >
+                  <FaTimes className="text-sm" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* File Upload Input */}
+      <div className="space-y-2">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#00A99D] transition-colors">
+          <input
+            type="file"
+            multiple
+            accept="image/*,application/pdf,.doc,.docx,.txt,.rtf"
+            onChange={(e) => handleFileSelection(e.target.files)}
+            className="hidden"
+            id="file-upload"
+          />
+          <label htmlFor="file-upload" className="cursor-pointer">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 bg-[#00A99D] bg-opacity-10 rounded-lg flex items-center justify-center mb-3">
+                <FaPlus className="text-[#00A99D] text-xl" />
+              </div>
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Add Files
+              </p>
+              <p className="text-xs text-gray-500">
+                Click to browse or drag and drop
+              </p>
+            </div>
+          </label>
+        </div>
+        <p className="text-xs text-gray-500 text-center">
+          Supported formats: Images (JPG, PNG, GIF, WebP), Documents (PDF, DOC,
+          DOCX, TXT, RTF)
+        </p>
+      </div>
+    </div>
+  );
+
   // Main component render
   return (
     <div className="user-discussions">
@@ -749,10 +1081,10 @@ const UserDiscussions = () => {
         }}
         okText="Save Changes"
         confirmLoading={editLoading}
-        width={800}
+        width={900}
         className="edit-modal"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
               Title
@@ -779,34 +1111,8 @@ const UserDiscussions = () => {
           {/* Updated Tag Input */}
           {renderTagInput()}
 
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Image
-            </label>
-            {existingFile && !editForm.file && (
-              <div className="mb-2 flex items-center gap-2">
-                <img
-                  src={existingFile}
-                  alt="Current"
-                  className="h-16 w-16 object-cover rounded border"
-                />
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => setExistingFile(null)}
-                  icon={<FaTimes />}
-                >
-                  Remove Current Image
-                </Button>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleEditFormChange("file", e.target.files[0])}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#00A99D] file:text-white hover:file:bg-[#008F84]"
-            />
-          </div>
+          {/* File Management */}
+          {renderFileManagement()}
         </div>
       </Modal>
 
@@ -816,22 +1122,41 @@ const UserDiscussions = () => {
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
         footer={null}
-        width={800}
+        width={900}
       >
         {discussionToView && (
-          <div>
-            {discussionToView.thumbnail && (
-              <img
-                src={discussionToView.thumbnail}
-                alt="Discussion"
-                className="mb-4 w-full rounded"
-                style={{ maxHeight: 300, objectFit: "contain" }}
-              />
-            )}
+          <div className="max-h-[70vh] overflow-y-auto">
             <div
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: discussionToView.content }}
+              className="prose max-w-none mb-4"
+              dangerouslySetInnerHTML={{
+                __html: discussionToView.rawContent || discussionToView.content,
+              }}
             />
+
+            {/* Files and Images in View Modal */}
+            {discussionToView.thumbnail &&
+              discussionToView.thumbnail.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-1 h-4 bg-[#00A99D] rounded-full"></div>
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      Attachments
+                    </h4>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {discussionToView.thumbnail.length} file
+                      {discussionToView.thumbnail.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {discussionToView.thumbnail.map((fileUrl, index) => (
+                      <div key={index} className="w-full">
+                        {renderFilePreview(fileUrl)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             <div className="mt-4 flex flex-wrap gap-2">
               {discussionToView.tags?.map((tag, idx) => (
                 <Tag key={idx} color="#00A99D">

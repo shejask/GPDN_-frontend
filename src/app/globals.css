@@ -14,6 +14,20 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 /* React Quill Editor Styles */
@@ -60,25 +74,26 @@ body {
 .ql-snow .ql-toolbar button:hover,
 .ql-snow .ql-toolbar button:focus,
 .ql-snow .ql-toolbar button.ql-active {
-  color: #00A99D;
+  color: #00a99d;
 }
 
 .ql-snow .ql-toolbar button:hover .ql-stroke,
 .ql-snow .ql-toolbar button:focus .ql-stroke,
 .ql-snow .ql-toolbar button.ql-active .ql-stroke {
-  stroke: #00A99D;
+  stroke: #00a99d;
 }
 
 .ql-snow .ql-toolbar button:hover .ql-fill,
 .ql-snow .ql-toolbar button:focus .ql-fill,
 .ql-snow .ql-toolbar button.ql-active .ql-fill {
-  fill: #00A99D;
+  fill: #00a99d;
 }
 
 /* Create Palliative Unit Modal Styles */
 .create-palliative-modal .ant-modal-content {
   border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border: 1px solid #e5e7eb;
 }
 
@@ -108,7 +123,7 @@ body {
 
 .create-palliative-modal .ant-input:focus,
 .create-palliative-modal .ant-input:hover {
-  border-color: #00A99D;
+  border-color: #00a99d;
   box-shadow: 0 0 0 2px rgba(0, 169, 157, 0.1);
 }
 
@@ -128,13 +143,13 @@ body {
 }
 
 .create-palliative-modal .ant-btn-primary {
-  background: #00A99D;
-  border-color: #00A99D;
+  background: #00a99d;
+  border-color: #00a99d;
 }
 
 .create-palliative-modal .ant-btn-primary:hover {
-  background: #008F84;
-  border-color: #008F84;
+  background: #008f84;
+  border-color: #008f84;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 169, 157, 0.3);
 }
@@ -149,11 +164,9 @@ body {
 }
 
 * {
-  -ms-overflow-style: none; 
-  scrollbar-width: none;  
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-
-
 
 @layer base {
   :root {
@@ -211,8 +224,6 @@ body {
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
@@ -258,8 +269,8 @@ body {
 }
 
 .ProseMirror pre {
-  background: #0D0D0D;
-  color: #FFF;
+  background: #0d0d0d;
+  color: #fff;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
 }
@@ -270,7 +281,6 @@ body {
   background: none;
   font-size: 0.8rem;
 }
-
 
 /* Add these styles to your globals.css */
 @layer components {
