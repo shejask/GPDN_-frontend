@@ -35,7 +35,7 @@ const SectionOne = () => {
           <div className="relative w-full h-full">
             <div className="lg:absolute flex lg:items-center top-[8.5vh] xl:top-[8vh] left-0 w-full md:w-1/2 h-auto">
               <div className="flex flex-col gap-4 lg:gap-10 lg:justify-between">
-                <h1 className="text-4xl  md:text-7xl lg:text-[6.5vw] xl:text-[6vw] font-light lg:leading-none  w-full lg:w-[150%]  text-[#1E1E1E]">
+                <h1 className="text-4xl  md:text-6xl lg:text-[6.1vw] xl:text-[5.5vw] font-light lg:leading-none  w-full lg:w-[150%]  text-[#1E1E1E]">
                   Global Care
                   <br className="hidden lg:block" />
                   for a <span className="font-medium">Brighter Tomorrow</span>
@@ -62,7 +62,7 @@ const SectionOne = () => {
             </div>
           </div>
           {/* ---Desktop Slider---- */}
-          <div className="hidden md:flex w-full h-full justify-center relative ">
+          <div className="hidden md:flex w-full h-full justify-center relative md:ml-12 ">
             <div className="absolute bottom-8 right-20 flex justify-center items-center z-10">
               <AnimatePresence>
                 <motion.h4
@@ -95,10 +95,7 @@ const SectionOne = () => {
                   <path d="M0 30C0 13.4315 13.4315 0 30 0H475C491.569 0 505 13.4315 505 30V650C505 666.569 491.569 680 475 680H30C13.4314 680 0 666.569 0 650V358.247C0 341.389 13.8853 327.841 30.7375 328.256L91.2625 329.744C108.115 330.159 122 316.611 122 299.753V111.5C122 94.9315 108.569 81.5 92 81.5H30C13.4315 81.5 0 68.0685 0 51.5V30Z" />
                 </clipPath>
               </defs>
-              <foreignObject
-                clipPath="url(#custom-shape)"
-                className="w-full h-full"
-              >
+              <foreignObject className="w-[28rem] h-full rounded-3xl">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentImage}
@@ -123,6 +120,7 @@ const SectionOne = () => {
                       alt="Caring"
                       layout="fill"
                       objectFit="cover"
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
                 </AnimatePresence>
@@ -151,7 +149,7 @@ const SectionOne = () => {
         </div>
 
         {/* -----Right Side----- */}
-        <div className="w-full md:h-full flex flex-col lg:pl-4 py-10 lg:py-0 ">
+        <div className="w-full md:h-full flex flex-col lg:pl-4 py-10 lg:py-0 lg:flex lg:items-center lg:gap-5 ">
           <div className="w-full h-[40%]  flex justify-center items-center">
             <div className="w-full flex flex-col justify-center gap-2 lg:gap-1 xl:gap-3 2xl:gap-8 h-full">
               <div className="w-full flex flex-col text-sm md:text-[2vh]">

@@ -132,6 +132,14 @@ const ForumDiscussion = () => {
   // Action states
   const [actionLoading, setActionLoading] = useState({});
 
+  // Image modal state
+  const [imageModal, setImageModal] = useState({
+    isOpen: false,
+    imageUrl: "",
+    imageName: "",
+  });
+  const [imageLoading, setImageLoading] = useState(false);
+
   // ========================================================================
   // UTILITY FUNCTIONS
   // ========================================================================
@@ -149,6 +157,31 @@ const ForumDiscussion = () => {
       console.error("Error getting user ID:", error);
       return null;
     }
+  }, []);
+
+  /**
+   * Open image modal
+   */
+  const openImageModal = useCallback((imageUrl, imageName = "") => {
+    console.log("Opening image modal with:", { imageUrl, imageName });
+    setImageLoading(true);
+    setImageModal({
+      isOpen: true,
+      imageUrl,
+      imageName,
+    });
+  }, []);
+
+  /**
+   * Close image modal
+   */
+  const closeImageModal = useCallback(() => {
+    setImageLoading(false);
+    setImageModal({
+      isOpen: false,
+      imageUrl: "",
+      imageName: "",
+    });
   }, []);
 
   // Check if user is authenticated and redirect if not
@@ -1015,6 +1048,28 @@ const ForumDiscussion = () => {
     setMobileMenuOpen((prev) => !prev);
   };
 
+  // Handle escape key for image modal
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape" && imageModal.isOpen) {
+        closeImageModal();
+      }
+    };
+
+    if (imageModal.isOpen) {
+      document.addEventListener("keydown", handleEscapeKey);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+      document.body.style.overflow = "unset";
+    };
+  }, [imageModal.isOpen, closeImageModal]);
+
   // ========================================================================
   // MEMOIZED VALUES
   // ========================================================================
@@ -1230,13 +1285,18 @@ const ForumDiscussion = () => {
                                       alt={fileName}
                                       className="rounded-lg w-full h-24 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                                       onClick={() =>
-                                        window.open(fileUrl, "_blank")
+                                        openImageModal(fileUrl, fileName)
                                       }
                                       onError={(e) => {
                                         e.target.style.display = "none";
                                       }}
                                     />
-                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                    <div
+                                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center cursor-pointer"
+                                      onClick={() =>
+                                        openImageModal(fileUrl, fileName)
+                                      }
+                                    >
                                       <svg
                                         className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                                         fill="none"
@@ -1837,6 +1897,64 @@ const ForumDiscussion = () => {
           )}
         </div>
       </div>
+
+      {/* Image Modal */}
+      {imageModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={closeImageModal}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full p-2 transition-all duration-200"
+              aria-label="Close image"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Loading spinner */}
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+
+            {/* Image */}
+            <img
+              src={imageModal.imageUrl}
+              alt={imageModal.imageName}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+              onLoad={() => setImageLoading(false)}
+              onError={() => setImageLoading(false)}
+            />
+
+            {/* Image name/caption */}
+            {imageModal.imageName && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+                <p className="text-sm text-center">{imageModal.imageName}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

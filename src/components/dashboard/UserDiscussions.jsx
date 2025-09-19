@@ -74,7 +74,7 @@ const UserDiscussions = () => {
     tags: [],
     files: [], // New files to upload
     existingFiles: [], // Existing files from API
-    filesToRemove: [], // Files marked for removal
+    removeFiles: [], // Files marked for removal
   });
   const [editLoading, setEditLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -214,7 +214,7 @@ const UserDiscussions = () => {
   const markFileForRemoval = (fileUrl) => {
     setEditForm((prev) => ({
       ...prev,
-      filesToRemove: [...prev.filesToRemove, fileUrl],
+      removeFiles: [...prev.removeFiles, fileUrl],
       existingFiles: prev.existingFiles.filter((file) => file !== fileUrl),
     }));
   };
@@ -222,7 +222,7 @@ const UserDiscussions = () => {
   const restoreRemovedFile = (fileUrl) => {
     setEditForm((prev) => ({
       ...prev,
-      filesToRemove: prev.filesToRemove.filter((file) => file !== fileUrl),
+      removeFiles: prev.removeFiles.filter((file) => file !== fileUrl),
       existingFiles: [...prev.existingFiles, fileUrl],
     }));
   };
@@ -276,6 +276,7 @@ const UserDiscussions = () => {
           thumbnail: Array.isArray(thread.thumbnail) ? thread.thumbnail : [],
           authorId: thread.authorId,
           category: thread.category || "",
+          approvalStatus : thread.approvalStatus
         }));
 
         setDiscussions(transformedThreads);
@@ -351,7 +352,7 @@ const UserDiscussions = () => {
       tags: discussion.tags || [],
       files: [], // New files to upload
       existingFiles: [...(discussion.thumbnail || [])], // Copy existing files
-      filesToRemove: [], // Files marked for removal
+      removeFiles: [], // Files marked for removal
     });
     setTagInput(""); // Reset tag input
     setSuggestedTags([]); // Reset suggestions
@@ -387,8 +388,8 @@ const UserDiscussions = () => {
       }
 
       // Add files to remove
-      for (let i = 0; i < editForm.filesToRemove.length; i++) {
-        formData.append("removeFiles", editForm.filesToRemove[i]);
+        for (let i = 0; i < editForm.removeFiles.length; i++) {
+        formData.append("removeFiles", editForm.removeFiles[i]);
       }
 
       const response = await fetch(
@@ -658,11 +659,12 @@ const UserDiscussions = () => {
             {formatDate(discussion.createdAt)}
           </span>
         </div>
-        <div className="text-gray-400">
+        {/* <div className="text-gray-400">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
           </svg>
-        </div>
+        </div> */}
+        {discussion.approvalStatus === true ? <div className="px-2 py-1 text-sm bg-green-500 text-white rounded-full">Approved</div> : <div className="px-2 py-1 text-sm bg-red-500 text-white rounded-full">Rejected</div>}
       </div>
 
       {/* Content */}
@@ -904,19 +906,19 @@ const UserDiscussions = () => {
       )}
 
       {/* Files marked for removal */}
-      {editForm.filesToRemove.length > 0 && (
+      {editForm.removeFiles.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-medium text-red-600">
               Files to be removed
             </h4>
             <span className="text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">
-              {editForm.filesToRemove.length} file
-              {editForm.filesToRemove.length !== 1 ? "s" : ""}
+              {editForm.removeFiles.length} file
+              {editForm.removeFiles.length !== 1 ? "s" : ""}
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {editForm.filesToRemove.map((fileUrl, index) => (
+            {editForm.removeFiles.map((fileUrl, index) => (
               <div key={index} className="relative w-full">
                 <div className="opacity-60">{renderFilePreview(fileUrl)}</div>
                 <div className="absolute inset-0 bg-red-500 bg-opacity-10 rounded-xl flex items-center justify-center">

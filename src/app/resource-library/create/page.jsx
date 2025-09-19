@@ -8,7 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import Image from "next/image";
-import { Input, Upload, Button, Select, Tag, message } from "antd";
+import { Input, Upload, Button, Select, Tag, message, Spin, Alert } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import logo from "../../assets/registation/logo.png";
@@ -299,6 +299,8 @@ function UploadResource() {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [processingFiles, setProcessingFiles] = useState(false);
   const router = useRouter();
   const uploadRef = useRef(null); // 1. Add this ref
 
@@ -382,7 +384,7 @@ function UploadResource() {
       "text/csv",
     ];
 
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    const maxSize = 25 * 1024 * 1024; // 25MB in bytes (increased from 10MB)
 
     if (!allowedTypes.includes(file.type)) {
       message.error(
@@ -392,7 +394,7 @@ function UploadResource() {
     }
 
     if (file.size > maxSize) {
-      message.error(`${file.name} is too large. Maximum file size is 10MB.`);
+      message.error(`${file.name} is too large. Maximum file size is 25MB.`);
       return false;
     }
 
@@ -477,34 +479,37 @@ function UploadResource() {
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
-      alert("Please sign in to upload a resource");
+      message.error("Please sign in to upload a resource");
       router.push("/signin");
       return;
     }
 
     if (!title.trim()) {
-      alert("Please enter a title");
+      message.error("Please enter a title");
       return;
     }
 
     if (!description.trim()) {
-      alert("Please enter a description");
+      message.error("Please enter a description");
       return;
     }
 
     // Get content from rich text editor
     const editorContent = editorRef.current?.getContent();
     if (!editorContent) {
-      alert("Please enter content");
+      message.error("Please enter content");
       return;
     }
 
     if (fileList.length === 0) {
-      alert("Please upload at least one file");
+      message.error("Please upload at least one file");
       return;
     }
 
     setLoading(true);
+    setProcessingFiles(true);
+    setUploadProgress(null);
+
     try {
       // Create FormData to handle multiple file uploads
       const formData = new FormData();
@@ -515,19 +520,26 @@ function UploadResource() {
       formData.append("content", editorContent);
       formData.append("authorId", userId);
 
+      // Get files for size calculation
+      const files = fileList
+        .map((file) => file.originFileObj || file)
+        .filter((file) => file instanceof File);
+
+      // Calculate total file size for warning
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+
+      if (totalSize > 50 * 1024 * 1024) {
+        // 50MB total warning
+        message.warning(
+          `Large upload detected (${totalSizeMB}MB). This may take a while. Please be patient.`
+        );
+      }
+
       // Add all files to FormData - FIXED: Use "file" field name (not "files")
-      fileList.forEach((file, index) => {
-        const fileToUpload = file.originFileObj || file;
-        if (fileToUpload && fileToUpload instanceof File) {
-          formData.append("file", fileToUpload); // Changed from "files" to "file"
-          console.log(
-            `Added file ${index}:`,
-            fileToUpload.name,
-            fileToUpload.size
-          );
-        } else {
-          console.error(`Invalid file at index ${index}:`, file);
-        }
+      files.forEach((file, index) => {
+        formData.append("file", file); // Changed from "files" to "file"
+        console.log(`Added file ${index}:`, file.name, file.size);
       });
 
       // FIXED: Send tags as individual entries (not JSON string)
@@ -550,7 +562,16 @@ function UploadResource() {
         }
       }
 
-      const response = await createResource(formData);
+      const response = await createResource(
+        formData,
+        // Progress callback
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+
+      setProcessingFiles(false);
+      setUploadProgress(null);
 
       if (response.success) {
         message.success({
@@ -562,7 +583,34 @@ function UploadResource() {
         });
         router.push("/resource-library");
       } else {
-        throw new Error(response.error || "Failed to upload resource");
+        // Enhanced error messages based on the error type
+        if (
+          response.status === 413 ||
+          response.error?.toLowerCase().includes("too large")
+        ) {
+          message.error(response.error);
+        } else if (response.status === 408) {
+          message.error(response.error);
+        } else if (response.status === 507) {
+          message.error(response.error);
+        } else if (response.status === 415) {
+          message.error(response.error);
+        } else if (response.status === 0) {
+          // Check if this might be a file size issue disguised as network error
+          if (
+            response.error?.toLowerCase().includes("too large") ||
+            response.error?.toLowerCase().includes("entity") ||
+            files.length > 0
+          ) {
+            message.error(
+              "Uploaded files are too large. Try uploading smaller ones."
+            );
+          } else {
+            message.error(response.error);
+          }
+        } else {
+          message.error(response.error || "Failed to upload resource");
+        }
       }
     } catch (error) {
       console.error("Error uploading resource:", error);
@@ -576,6 +624,8 @@ function UploadResource() {
       });
     } finally {
       setLoading(false);
+      setProcessingFiles(false);
+      setUploadProgress(null);
     }
   };
 
@@ -711,14 +761,11 @@ function UploadResource() {
 
           {/* Category/Tags Field */}
           <div className="mb-8">
-       
             <label className="block text-gray-900 text-base font-semibold mb-3">
               Tags
             </label>{" "}
-            
             <div className="border-2 border-gray-200 rounded-lg p-4 bg-white">
               {" "}
-              
               <div className="flex flex-wrap gap-2 mb-4">
                 {" "}
                 {/* // modified line */}
@@ -839,7 +886,12 @@ function UploadResource() {
                   </span>
                 </div>
                 <div className="text-sm text-gray-500">
-                  Supported Format: SVG, JPG, PNG (10mb each)
+                  Supported Format: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT,
+                  CSV, JPG, JPEG, PNG (Max 25MB each)
+                </div>
+                <div className="text-xs text-blue-500 mt-1">
+                  ℹ️ Large images will be automatically compressed to improve
+                  upload speed
                 </div>
               </div>
               {/* Hidden Upload Component */}
@@ -851,6 +903,82 @@ function UploadResource() {
                 </Upload>
               </div>
             </div>
+            {/* File Size Warning */}
+            {fileList.length > 0 &&
+              (() => {
+                const files = fileList
+                  .map((file) => file.originFileObj || file)
+                  .filter((file) => file instanceof File);
+                const totalSize = files.reduce(
+                  (sum, file) => sum + file.size,
+                  0
+                );
+                const totalSizeMB = (totalSize / 1024 / 1024).toFixed(1);
+                const largeFiles = files.filter(
+                  (f) => f.size > 10 * 1024 * 1024
+                );
+
+                if (totalSize > 50 * 1024 * 1024) {
+                  return (
+                    <Alert
+                      message="Large Upload Detected"
+                      description={`Total size: ${totalSizeMB}MB. This may take longer to upload and could fail. Consider uploading files separately.`}
+                      type="warning"
+                      showIcon
+                      className="mt-4"
+                      action={
+                        <button
+                          onClick={() => {
+                            setFileList([]);
+                          }}
+                          className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                        >
+                          Clear All
+                        </button>
+                      }
+                    />
+                  );
+                } else if (largeFiles.length > 0) {
+                  return (
+                    <Alert
+                      message="Large Files Will Be Compressed"
+                      description={`${largeFiles.length} large image(s) detected. They will be automatically compressed to improve upload speed.`}
+                      type="info"
+                      showIcon
+                      className="mt-4"
+                    />
+                  );
+                }
+                return null;
+              })()}
+            {/* Upload Progress */}
+            {(processingFiles || uploadProgress) && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Spin size="small" />
+                  <div className="flex-1">
+                    {processingFiles && (
+                      <p className="text-sm text-blue-700 font-medium">
+                        Processing files...
+                      </p>
+                    )}
+                    {uploadProgress && (
+                      <div>
+                        <p className="text-sm text-blue-700 font-medium">
+                          Processing {uploadProgress.fileName}... (
+                          {uploadProgress.current}/{uploadProgress.total})
+                        </p>
+                        {uploadProgress.processed && (
+                          <p className="text-xs text-blue-600">
+                            ✓ Image compressed to reduce upload time
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             {/* File List Display */}
             {fileList.length > 0 && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -914,10 +1042,18 @@ function UploadResource() {
             <Button
               type="primary"
               onClick={handleSubmit}
-              loading={loading}
-              className="bg-[#00A99D] hover:bg-[#008F84] border-[#00A99D] hover:border-[#008F84] text-white font-semibold px-8 py-3 h-auto text-base rounded-lg transition-colors"
+              loading={loading || processingFiles}
+              disabled={loading || processingFiles}
+              className="bg-[#00A99D] hover:bg-[#008F84] border-[#00A99D] hover:border-[#008F84] text-white font-semibold px-8 py-3 h-auto text-base rounded-lg transition-colors flex items-center gap-2"
             >
-              Post
+              {loading || processingFiles ? (
+                <>
+                  <Spin size="small" />
+                  {processingFiles ? "Processing..." : "Uploading..."}
+                </>
+              ) : (
+                "Post"
+              )}
             </Button>
           </div>
         </div>

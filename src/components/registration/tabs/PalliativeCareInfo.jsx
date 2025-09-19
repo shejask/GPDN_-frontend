@@ -112,31 +112,49 @@ function PalliativeCareInfo({ onContinue }) {
   };
 
   const handleSubmit = () => {
-    if (validateForm()) {
-      // Process special interests array - replace "Other" with the custom value if present
-      let processedSpecialInterests = [
-        ...formData.specialInterestsInPalliativeCare,
-      ];
-      if (
-        processedSpecialInterests.includes("Other") &&
-        formData.specialInterestsOther.trim()
-      ) {
-        // Remove "Other" and add the custom value
-        processedSpecialInterests = processedSpecialInterests.filter(
-          (item) => item !== "Other"
-        );
-        processedSpecialInterests.push(formData.specialInterestsOther.trim());
-      }
-
-      onContinue({
-        bio: formData.bio,
-        hasFormalTrainingInPalliativeCare:
-          formData.hasFormalTrainingInPalliativeCare,
-        affiliatedPalliativeAssociations:
-          formData.affiliatedPalliativeAssociations,
-        specialInterestsInPalliativeCare: processedSpecialInterests,
-      });
+    // Process special interests array - replace "Other" with the custom value if present
+    let processedSpecialInterests = [
+      ...formData.specialInterestsInPalliativeCare,
+    ];
+    if (
+      processedSpecialInterests.includes("Other") &&
+      formData.specialInterestsOther.trim()
+    ) {
+      // Remove "Other" and add the custom value
+      processedSpecialInterests = processedSpecialInterests.filter(
+        (item) => item !== "Other"
+      );
+      processedSpecialInterests.push(formData.specialInterestsOther.trim());
     }
+
+    const dataToSend = {};
+
+    // Only add fields that have values
+    if (formData.bio && formData.bio.trim()) {
+      dataToSend.bio = formData.bio;
+    }
+
+    if (formData.hasFormalTrainingInPalliativeCare !== null) {
+      dataToSend.hasFormalTrainingInPalliativeCare =
+        formData.hasFormalTrainingInPalliativeCare;
+    }
+
+    if (
+      formData.affiliatedPalliativeAssociations &&
+      formData.affiliatedPalliativeAssociations.trim()
+    ) {
+      dataToSend.affiliatedPalliativeAssociations =
+        formData.affiliatedPalliativeAssociations;
+    }
+
+    if (processedSpecialInterests && processedSpecialInterests.length > 0) {
+      dataToSend.specialInterestsInPalliativeCare = processedSpecialInterests;
+    }
+
+    console.log("=== PALLIATIVE CARE INFO SUBMIT ===");
+    console.log("Data being sent from PalliativeCareInfo:", dataToSend);
+
+    onContinue(dataToSend);
   };
 
   return (
@@ -150,7 +168,8 @@ function PalliativeCareInfo({ onContinue }) {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">
-            Do you have formal training in palliative care?
+            Do you have formal training in palliative care?{" "}
+            <span className="text-red-500">*</span>
           </label>
           <Radio.Group
             onChange={handleRadioChange}
@@ -177,7 +196,8 @@ function PalliativeCareInfo({ onContinue }) {
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">
-            Affiliated Palliative Associations
+            Affiliated Palliative Associations{" "}
+            <span className="text-red-500">*</span>
           </label>
           <Input
             size="large"

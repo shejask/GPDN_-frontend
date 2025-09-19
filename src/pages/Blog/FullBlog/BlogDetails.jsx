@@ -136,7 +136,6 @@ const BlogDetails = ({ blogId }) => {
                 <span className="text-gray-500 text-sm font-medium">
                   {formatDate(currentBlog.createdAt)}
                 </span>
-                <span className="text-gray-500 text-sm">• 5 min read</span>
               </div>
 
               {/* Tags */}

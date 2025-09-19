@@ -28,6 +28,7 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import UserResources from "./UserResources";
 import UserDiscussions from "./UserDiscussions";
+import UserPalliativeUnits from "./UserPalliativeUnits";
 import { usePathname } from "next/navigation"; // Add this import
 
 const defaultAvatar = `data:image/svg+xml,${encodeURIComponent(
@@ -96,10 +97,33 @@ const Settings = () => {
     medicalRegistrationNumber: "",
     hasFormalTrainingInPalliativeCare: false,
     affiliatedPalliativeAssociations: "",
-    specialInterestsInPalliativeCare: "",
+    specialInterestsInPalliativeCare: [],
   });
 
-  const tabs = ["Account", "Discussions", "Resources", "Notification"];
+  // State for "Other" specification
+  const [otherSpecialInterest, setOtherSpecialInterest] = useState("");
+
+  const tabs = ["Account", "Discussions", "Resources", "Palliative Units"];
+
+  // Special interests options
+  const specialInterestsOptions = [
+    { value: "Adult Palliative Care", label: "Adult Palliative Care" },
+    {
+      value: "Paediatric Palliative Care",
+      label: "Paediatric Palliative Care",
+    },
+    { value: "Neuro-palliative care", label: "Neuro-palliative care" },
+    { value: "Pulmonary palliative care", label: "Pulmonary palliative care" },
+    {
+      value: "Ethics / Legal in Palliative Care",
+      label: "Ethics / Legal in Palliative Care",
+    },
+    {
+      value: "Research in Palliative Care",
+      label: "Research in Palliative Care",
+    },
+    { value: "Other", label: "Other (please specify)" },
+  ];
 
   useEffect(() => {
     const getUserData = async () => {
@@ -131,9 +155,42 @@ const Settings = () => {
               response.data.data.hasFormalTrainingInPalliativeCare || false,
             affiliatedPalliativeAssociations:
               response.data.data.affiliatedPalliativeAssociations || "",
-            specialInterestsInPalliativeCare:
-              response.data.data.specialInterestsInPalliativeCare || "",
+            specialInterestsInPalliativeCare: Array.isArray(
+              response.data.data.specialInterestsInPalliativeCare
+            )
+              ? response.data.data.specialInterestsInPalliativeCare.filter(
+                  (interest) =>
+                    specialInterestsOptions.some(
+                      (option) => option.value === interest
+                    )
+                )
+              : [],
           });
+
+          // Extract "Other" values
+          if (
+            Array.isArray(response.data.data.specialInterestsInPalliativeCare)
+          ) {
+            const otherValues =
+              response.data.data.specialInterestsInPalliativeCare.filter(
+                (interest) =>
+                  !specialInterestsOptions.some(
+                    (option) => option.value === interest
+                  )
+              );
+            if (otherValues.length > 0) {
+              setOtherSpecialInterest(otherValues.join(", "));
+              // Add "Other" to the selected values if there are custom interests
+              setFormData((prev) => ({
+                ...prev,
+                specialInterestsInPalliativeCare: [
+                  ...prev.specialInterestsInPalliativeCare,
+                  "Other",
+                ],
+              }));
+            }
+          }
+
           console.log("Setting user profile:", response.data.data);
         }
       } catch (error) {
@@ -152,6 +209,14 @@ const Settings = () => {
       ...prev,
       [field]: value,
     }));
+
+    // Clear "Other" specification if "Other" is deselected
+    if (
+      field === "specialInterestsInPalliativeCare" &&
+      !value.includes("Other")
+    ) {
+      setOtherSpecialInterest("");
+    }
   };
 
   const handleEdit = () => {
@@ -177,9 +242,29 @@ const Settings = () => {
           userProfile.hasFormalTrainingInPalliativeCare || false,
         affiliatedPalliativeAssociations:
           userProfile.affiliatedPalliativeAssociations || "",
-        specialInterestsInPalliativeCare:
-          userProfile.specialInterestsInPalliativeCare || "",
+        specialInterestsInPalliativeCare: Array.isArray(
+          userProfile.specialInterestsInPalliativeCare
+        )
+          ? userProfile.specialInterestsInPalliativeCare.filter((interest) =>
+              specialInterestsOptions.some(
+                (option) => option.value === interest
+              )
+            )
+          : [],
       });
+
+      // Reset "Other" values
+      if (Array.isArray(userProfile.specialInterestsInPalliativeCare)) {
+        const otherValues = userProfile.specialInterestsInPalliativeCare.filter(
+          (interest) =>
+            !specialInterestsOptions.some((option) => option.value === interest)
+        );
+        setOtherSpecialInterest(
+          otherValues.length > 0 ? otherValues.join(", ") : ""
+        );
+      } else {
+        setOtherSpecialInterest("");
+      }
     }
   };
 
@@ -242,9 +327,36 @@ const Settings = () => {
         "affiliatedPalliativeAssociations",
         formData.affiliatedPalliativeAssociations || ""
       );
+      // Handle specialInterestsInPalliativeCare as array
+      let interestsArray = [
+        ...(formData.specialInterestsInPalliativeCare || []),
+      ];
+
+      // If "Other" is selected and there's a custom specification, replace "Other" with the custom values
+      if (interestsArray.includes("Other") && otherSpecialInterest.trim()) {
+        // Remove "Other" from the array
+        interestsArray = interestsArray.filter(
+          (interest) => interest !== "Other"
+        );
+        // Add custom interests
+        const customInterests = otherSpecialInterest
+          .split(",")
+          .map((item) => item.trim())
+          .filter((item) => item);
+        interestsArray = [...interestsArray, ...customInterests];
+      } else if (
+        interestsArray.includes("Other") &&
+        !otherSpecialInterest.trim()
+      ) {
+        // Remove "Other" if no custom specification is provided
+        interestsArray = interestsArray.filter(
+          (interest) => interest !== "Other"
+        );
+      }
+
       formDataToSend.append(
         "specialInterestsInPalliativeCare",
-        formData.specialInterestsInPalliativeCare || ""
+        JSON.stringify(interestsArray)
       );
 
       // Append additional fields from userProfile that might be required by backend
@@ -308,9 +420,32 @@ const Settings = () => {
               data.data.hasFormalTrainingInPalliativeCare || false,
             affiliatedPalliativeAssociations:
               data.data.affiliatedPalliativeAssociations || "",
-            specialInterestsInPalliativeCare:
-              data.data.specialInterestsInPalliativeCare || "",
+            specialInterestsInPalliativeCare: Array.isArray(
+              data.data.specialInterestsInPalliativeCare
+            )
+              ? data.data.specialInterestsInPalliativeCare.filter((interest) =>
+                  specialInterestsOptions.some(
+                    (option) => option.value === interest
+                  )
+                )
+              : [],
           });
+
+          // Update "Other" values after successful save
+          if (Array.isArray(data.data.specialInterestsInPalliativeCare)) {
+            const otherValues =
+              data.data.specialInterestsInPalliativeCare.filter(
+                (interest) =>
+                  !specialInterestsOptions.some(
+                    (option) => option.value === interest
+                  )
+              );
+            setOtherSpecialInterest(
+              otherValues.length > 0 ? otherValues.join(", ") : ""
+            );
+          } else {
+            setOtherSpecialInterest("");
+          }
         }
       } else {
         message.error(data.message || "Failed to update profile");
@@ -976,18 +1111,87 @@ const Settings = () => {
                     <label className="block text-sm font-medium mb-2">
                       Special Interests in Palliative Care
                     </label>
-                    <Input.TextArea
-                      value={formData.specialInterestsInPalliativeCare}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "specialInterestsInPalliativeCare",
-                          e.target.value
-                        )
-                      }
-                      className="w-full"
-                      autoSize={{ minRows: 2, maxRows: 4 }}
-                      readOnly={!isEditing}
-                    />
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <Select
+                          mode="multiple"
+                          placeholder="Select your special interests"
+                          value={formData.specialInterestsInPalliativeCare}
+                          onChange={(value) =>
+                            handleInputChange(
+                              "specialInterestsInPalliativeCare",
+                              value
+                            )
+                          }
+                          options={specialInterestsOptions}
+                          className="w-full"
+                          size="large"
+                          showSearch
+                          filterOption={(input, option) =>
+                            (option?.label ?? "")
+                              .toLowerCase()
+                              .includes(input.toLowerCase())
+                          }
+                        />
+                        {formData.specialInterestsInPalliativeCare?.includes(
+                          "Other"
+                        ) && (
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-600">
+                              Please specify other interests:
+                            </label>
+                            <Input.TextArea
+                              value={otherSpecialInterest}
+                              onChange={(e) =>
+                                setOtherSpecialInterest(e.target.value)
+                              }
+                              placeholder="Enter custom interests separated by commas"
+                              className="w-full"
+                              autoSize={{ minRows: 2, maxRows: 3 }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Separate multiple custom interests with commas
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="min-h-[40px] p-3 border border-gray-200 rounded-md bg-gray-50">
+                        {formData.specialInterestsInPalliativeCare?.length >
+                        0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {formData.specialInterestsInPalliativeCare.map(
+                              (interest, index) => (
+                                <span
+                                  key={index}
+                                  className="px-3 py-1 bg-[#00A99D] text-white rounded-full text-sm"
+                                >
+                                  {interest}
+                                </span>
+                              )
+                            )}
+                            {otherSpecialInterest && (
+                              <>
+                                {otherSpecialInterest
+                                  .split(",")
+                                  .map((customInterest, index) => (
+                                    <span
+                                      key={`custom-${index}`}
+                                      className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
+                                    >
+                                      {customInterest.trim()}
+                                    </span>
+                                  ))}
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">
+                            No special interests selected
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1187,24 +1391,7 @@ const Settings = () => {
 
         {activeTab === "Resources" && <UserResources />}
 
-        {activeTab === "Notification" && (
-          <div className="max-w-3xl">
-            <div className="mb-8">
-              <h2 className="text-lg font-medium mb-2">
-                Notification Preferences
-              </h2>
-              <p className="text-gray-500 text-sm">
-                Manage your notification settings
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
-              <p className="text-center text-gray-500">
-                Notification preferences will be available soon.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === "Palliative Units" && <UserPalliativeUnits />}
       </div>
     </div>
   );

@@ -77,7 +77,7 @@ const SectionFive = () => {
 
   return (
     <section className="w-full py-8 sm:py-12 lg:py-16 xl:py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w mx-auto sm:px-6 md:px-0 ">
         {/* Section Header */}
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-4">
@@ -90,14 +90,14 @@ const SectionFive = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             <SkeletonBlogCard />
             <SkeletonBlogCard />
             <SkeletonBlogCard />
             <SkeletonBlogCard />
           </div>
         ) : blogs && blogs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {blogs.map((data, index) => (
               <article
                 key={data._id || index}
@@ -137,9 +137,11 @@ const SectionFive = () => {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-base sm:text-lg lg:text-base xl:text-lg font-semibold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
-                    {data.title || "Untitled Blog"}
-                  </h3>
+                  <Link href={`/blog/${data._id}`}>
+                    <h3 className="text-base sm:text-lg lg:text-base xl:text-lg font-semibold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+                      {data.title || "Untitled Blog"}
+                    </h3>
+                  </Link>
 
                   {/* Description */}
                   <p className="text-sm sm:text-base text-gray-600 mb-4 line-clamp-3 leading-relaxed">
@@ -189,7 +191,7 @@ const SectionFive = () => {
           <div className="text-center mt-8 sm:mt-12 lg:mt-16">
             <Link
               href="/blog"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 sm:px-8 sm:py-4 rounded-full transition-all duration-300 ease-in-out hover:shadow-lg"
+              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-[#039187] text-white font-medium px-6 py-3 sm:px-8 sm:py-4 rounded-xl transition-all duration-300 ease-in-out hover:shadow-lg"
             >
               <span>View All Blogs</span>
               <CgArrowRight className="w-5 h-5" />

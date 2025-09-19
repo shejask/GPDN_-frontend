@@ -290,7 +290,8 @@ ProfessionalRichTextEditor.displayName = "ProfessionalRichTextEditor";
 
 // Constants for validation
 const MAX_TITLE_LENGTH = 100;
-const MAX_FILE_SIZE_MB = 5; // Increased back to 5MB for multiple files
+const MAX_FILE_SIZE_MB = 25; // Increased to 25MB per file
+const MAX_TOTAL_SIZE_MB = 100; // Maximum total upload size
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -335,6 +336,8 @@ const CreatePost = () => {
   const [errors, setErrors] = useState({});
   const [formTouched, setFormTouched] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [processingFiles, setProcessingFiles] = useState(false);
 
   // Get userId from localStorage when component mounts
   useEffect(() => {
@@ -391,23 +394,23 @@ const CreatePost = () => {
         }
         break;
 
-      case "file":
-        if (value && value.length > 0) {
-          if (value.length > MAX_FILES) {
-            errorMessage = `Maximum ${MAX_FILES} files allowed`;
-          } else {
-            for (const file of value) {
-              if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-                errorMessage = `File type ${file.type} is not supported`;
-                break;
-              } else if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                errorMessage = `File ${file.name} must be less than ${MAX_FILE_SIZE_MB}MB`;
-                break;
-              }
-            }
-          }
-        }
-        break;
+      // case "file":
+      //   if (value && value.length > 0) {
+      //     if (value.length > MAX_FILES) {
+      //       errorMessage = `Maximum ${MAX_FILES} files allowed`;
+      //     } else {
+      //       for (const file of value) {
+      //         if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      //           errorMessage = `File type ${file.type} is not supported`;
+      //           break;
+      //         } else if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      //           errorMessage = `File ${file.name} must be less than ${MAX_FILE_SIZE_MB}MB`;
+      //           break;
+      //         }
+      //       }
+      //     }
+      //   }
+      //   break;
 
       case "tags":
         if (value.length > MAX_TAGS) {
@@ -444,7 +447,7 @@ const CreatePost = () => {
   const validateForm = useCallback(() => {
     const titleError = validateField("title", title);
     const descriptionError = validateField("description", description);
-    const filesError = validateField("files", files);
+
     const tagsError = validateField("tags", selectedTags);
 
     return !titleError && !descriptionError && !filesError && !tagsError;
@@ -538,8 +541,62 @@ const CreatePost = () => {
       const fileArray = Array.from(selectedFiles);
       const newFiles = [...files, ...fileArray];
 
-      const error = validateField("files", newFiles);
-      if (!error) {
+      // Validate file count
+      if (newFiles.length > MAX_FILES) {
+        messageApi.error(
+          `Maximum ${MAX_FILES} files allowed. Please remove some files first.`
+        );
+        return;
+      }
+
+      // Validate individual files and calculate total size
+      let totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      const invalidFiles = [];
+      const oversizedFiles = [];
+
+      for (const file of fileArray) {
+        // Check file type
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+          invalidFiles.push(file.name);
+          continue;
+        }
+
+        // Check individual file size
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+          oversizedFiles.push(
+            `${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`
+          );
+          continue;
+        }
+
+        totalSize += file.size;
+      }
+
+      // Show validation errors
+      if (invalidFiles.length > 0) {
+        messageApi.error(`Unsupported file types: ${invalidFiles.join(", ")}`);
+        return;
+      }
+
+      if (oversizedFiles.length > 0) {
+        messageApi.error(
+          `Files too large (max ${MAX_FILE_SIZE_MB}MB each): ${oversizedFiles.join(
+            ", "
+          )}`
+        );
+        return;
+      }
+
+      // Check total upload size
+      if (totalSize > MAX_TOTAL_SIZE_MB * 1024 * 1024) {
+        const totalSizeMB = (totalSize / 1024 / 1024).toFixed(1);
+        messageApi.warning({
+          content: `Total upload size is ${totalSizeMB}MB. Large uploads may take longer and could fail. Consider uploading fewer files at once.`,
+          duration: 8,
+        });
+      }
+
+      try {
         setFiles(newFiles);
 
         // Create previews for new files
@@ -568,13 +625,22 @@ const CreatePost = () => {
             ]);
           }
         });
-      } else {
-        messageApi.error(error);
+
+        // Show success message for large files
+        const largeFiles = fileArray.filter((f) => f.size > 10 * 1024 * 1024);
+        if (largeFiles.length > 0) {
+          messageApi.info({
+            content: `${largeFiles.length} large file(s) added. Images will be automatically compressed during upload to improve speed.`,
+            duration: 5,
+          });
+        }
+      } catch (error) {
+        messageApi.error("Failed to process files. Please try again.");
       }
 
       setFormTouched(true);
     },
-    [files, validateField, messageApi]
+    [files, messageApi]
   );
 
   /**
@@ -948,11 +1014,63 @@ const CreatePost = () => {
                       </p>
                       <p className="text-xs text-gray-400 mt-2">
                         Supported: Images, PDF, DOC, DOCX, TXT, XLS, XLSX, PPT,
-                        PPTX (Max {MAX_FILE_SIZE_MB}MB each)
+                        PPTX (Max {MAX_FILE_SIZE_MB}MB each, {MAX_TOTAL_SIZE_MB}
+                        MB total)
+                      </p>
+                      <p className="text-xs text-blue-500 mt-1">
+                        ℹ️ Large images will be automatically compressed to
+                        improve upload speed
                       </p>
                     </div>
                   </label>
                 </div>
+
+                {/* File Size Warning */}
+                {files.length > 0 &&
+                  (() => {
+                    const totalSize = files.reduce(
+                      (sum, file) => sum + file.size,
+                      0
+                    );
+                    const totalSizeMB = (totalSize / 1024 / 1024).toFixed(1);
+                    const largeFiles = files.filter(
+                      (f) => f.size > 10 * 1024 * 1024
+                    );
+
+                    if (totalSize > 50 * 1024 * 1024) {
+                      return (
+                        <Alert
+                          message="Large Upload Detected"
+                          description={`Total size: ${totalSizeMB}MB. This may take longer to upload and could fail. Consider uploading files separately.`}
+                          type="warning"
+                          showIcon
+                          className="mt-4"
+                          action={
+                            <button
+                              onClick={() => {
+                                setFiles([]);
+                                setFilePreviews([]);
+                              }}
+                              className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                            >
+                              Clear All
+                            </button>
+                          }
+                        />
+                      );
+                    } else if (largeFiles.length > 0) {
+                      return (
+                        <Alert
+                          message="Large Files Will Be Compressed"
+                          description={`${largeFiles.length} large image(s) detected. They will be automatically compressed to improve upload speed.`}
+                          type="info"
+                          showIcon
+                          className="mt-4"
+                        />
+                      );
+                    }
+                    return null;
+                  })()}
 
                 {/* File Previews */}
                 {filePreviews.length > 0 && (
@@ -1239,16 +1357,49 @@ const CreatePost = () => {
                 )}
               </div>
 
+              {/* Upload Progress */}
+              {(processingFiles || uploadProgress) && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Spin size="small" />
+                    <div className="flex-1">
+                      {processingFiles && (
+                        <p className="text-sm text-blue-700 font-medium">
+                          Processing files...
+                        </p>
+                      )}
+                      {uploadProgress && (
+                        <div>
+                          <p className="text-sm text-blue-700 font-medium">
+                            Processing {uploadProgress.fileName}... (
+                            {uploadProgress.current}/{uploadProgress.total})
+                          </p>
+                          {uploadProgress.processed && (
+                            <p className="text-xs text-blue-600">
+                              ✓ Image compressed to reduce upload time
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex justify-end">
                 <button
                   onClick={async () => {
                     try {
                       setIsSubmitting(true);
+                      setProcessingFiles(true);
+                      setUploadProgress(null);
+
                       if (!title.trim()) {
                         messageApi.error("Please enter a title");
                         return;
                       }
+
                       // Get content from rich text editor
                       const editorContent = editorRef.current?.getContent();
                       if (!editorContent) {
@@ -1263,13 +1414,36 @@ const CreatePost = () => {
                         return;
                       }
 
-                      const response = await createThread({
-                        title,
-                        content: editorRef.current?.getContent() || "",
-                        authorId: userId,
-                        tags: selectedTags,
-                        file: files,
-                      });
+                      // Calculate total file size for warning
+                      const totalSize = files.reduce(
+                        (sum, file) => sum + file.size,
+                        0
+                      );
+                      const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+
+                      if (totalSize > 50 * 1024 * 1024) {
+                        // 50MB total warning
+                        messageApi.warning(
+                          `Large upload detected (${totalSizeMB}MB). This may take a while. Please be patient.`
+                        );
+                      }
+
+                      const response = await createThread(
+                        {
+                          title,
+                          content: editorRef.current?.getContent() || "",
+                          authorId: userId,
+                          tags: selectedTags,
+                          file: files,
+                        },
+                        // Progress callback
+                        (progress) => {
+                          setUploadProgress(progress);
+                        }
+                      );
+
+                      setProcessingFiles(false);
+                      setUploadProgress(null);
 
                       if (response.success) {
                         messageApi.success("Thread created successfully!");
@@ -1277,21 +1451,61 @@ const CreatePost = () => {
                         // Navigate to the forum page after successful post
                         router.push("/forum");
                       } else {
-                        messageApi.error(
-                          response.error || "Failed to create thread"
-                        );
+                        // Enhanced error messages based on the error type
+                        if (
+                          response.status === 413 ||
+                          response.error?.toLowerCase().includes("too large")
+                        ) {
+                          messageApi.error(response.error);
+                        } else if (response.status === 408) {
+                          messageApi.error(response.error);
+                        } else if (response.status === 507) {
+                          messageApi.error(response.error);
+                        } else if (response.status === 415) {
+                          messageApi.error(response.error);
+                        } else if (response.status === 0) {
+                          // Check if this might be a file size issue disguised as network error
+                          if (
+                            response.error
+                              ?.toLowerCase()
+                              .includes("too large") ||
+                            response.error?.toLowerCase().includes("entity") ||
+                            files.length > 0
+                          ) {
+                            messageApi.error(
+                              "Uploaded files are too large. Try uploading smaller ones."
+                            );
+                          } else {
+                            messageApi.error(response.error);
+                          }
+                        } else {
+                          messageApi.error(
+                            response.error || "Failed to create thread"
+                          );
+                        }
                       }
                     } catch (error) {
                       console.error("Error creating thread:", error);
-                      messageApi.error("Failed to create thread");
+                      messageApi.error(
+                        "An unexpected error occurred. Please try again."
+                      );
                     } finally {
                       setIsSubmitting(false);
+                      setProcessingFiles(false);
+                      setUploadProgress(null);
                     }
                   }}
-                  className="px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
+                  disabled={isSubmitting || processingFiles}
                 >
-                  {isSubmitting ? "Posting..." : "Post"}
+                  {isSubmitting || processingFiles ? (
+                    <>
+                      <Spin size="small" />
+                      {processingFiles ? "Processing..." : "Posting..."}
+                    </>
+                  ) : (
+                    "Post"
+                  )}
                 </button>
               </div>
             </div>

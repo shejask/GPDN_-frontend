@@ -855,6 +855,7 @@ const UserResources = () => {
                 key={resource._id}
                 className="p-6 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow bg-white"
               >
+
                 {/* Author Info */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-[#00A99D] to-[#008F84] rounded-full overflow-hidden flex items-center justify-center">
@@ -895,6 +896,8 @@ const UserResources = () => {
                   </div>
 
                   {/* Action buttons */}
+
+                  {resource.approvalStatus === true ? <div className="px-2 py-1 text-sm bg-green-500 text-white rounded-full">Approved</div> : <div className="px-2 py-1 text-sm bg-red-500 text-white rounded-full">Rejected</div>}
                   <div className="ml-auto flex gap-1">
                     <Tooltip title="Edit">
                       <Button

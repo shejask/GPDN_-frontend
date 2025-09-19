@@ -1,7 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import "react-phone-input-2/lib/style.css";
+import PhoneInput from "react-phone-input-2";
 import Image from "next/image";
-import { Input, Modal, message, Select } from "antd";
+import { Input, Modal, message, Select, Checkbox } from "antd";
+import ReactSelect from "react-select";
+import countryList from "react-select-country-list";
 import logo from "../../app/assets/registation/logo.png";
 import { IoSearchOutline } from "react-icons/io5";
 import { MdClose, MdDashboard, MdMenu, MdAdd } from "react-icons/md";
@@ -41,12 +45,18 @@ const PalliativeUnits = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [services, setServices] = useState([]);
+
+  // Country options
+  const countryOptions = useMemo(() => countryList().getData(), []);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     state: "",
     country: "",
-    services: "",
+    services: [],
     contactDetails: "",
+    actionStatus: false,
   });
 
   // Speciality options
@@ -217,6 +227,8 @@ const PalliativeUnits = () => {
       !formData.state ||
       !formData.country ||
       !formData.services ||
+      !Array.isArray(formData.services) ||
+      formData.services.length === 0 ||
       !formData.contactDetails
     ) {
       message.error("Please fill in all required fields.");
@@ -225,8 +237,27 @@ const PalliativeUnits = () => {
 
     setCreateLoading(true);
     try {
-      console.log("Form data being sent:", formData);
-      const response = await createPalliativeUnit(formData);
+      // Transform the data to match API expectations
+      const apiData = {
+        name: formData.name,
+        state: formData.state,
+        country: formData.country,
+        services: formData.services,
+        contactDetails: formData.contactDetails,
+        actionStatus: formData.actionStatus, // Transform actionStatus to public
+      };
+
+      console.log("Form data being sent:", apiData);
+      console.log("Form services:", formData.services);
+      console.log(
+        "Services type:",
+        typeof formData.services,
+        "Array:",
+        Array.isArray(formData.services)
+      );
+      console.log("Selected country:", selectedCountry);
+      console.log("All form data:", formData);
+      const response = await createPalliativeUnit(apiData);
       console.log("Create unit response:", response);
 
       if (response && response.success !== false) {
@@ -236,8 +267,9 @@ const PalliativeUnits = () => {
           name: "",
           state: "",
           country: "",
-          services: "",
+          services: [],
           contactDetails: "",
+          actionStatus: false, // Reset to default
         });
         // Refresh the list after creation
         await fetchUnits();
@@ -398,13 +430,23 @@ const PalliativeUnits = () => {
     }));
   };
 
+  const handleCountryChange = (selectedOption) => {
+    setSelectedCountry(selectedOption);
+    setFormData((prev) => ({
+      ...prev,
+      country: selectedOption?.label || "",
+    }));
+  };
+
   const resetForm = () => {
+    setSelectedCountry(null);
     setFormData({
       name: "",
       state: "",
       country: "",
-      services: "",
+      services: [],
       contactDetails: "",
+      actionStatus: false,
     });
   };
 
@@ -440,6 +482,10 @@ const PalliativeUnits = () => {
   const handleMobileMenuToggle = () => {
     setMobileMenuOpen((prev) => !prev);
   };
+
+  useEffect(() => {
+    console.log(formData);
+  }, [formData.actionStatus]);
 
   return (
     <div className="grid md:flex min-h-screen bg-white">
@@ -739,6 +785,8 @@ const PalliativeUnits = () => {
                             Services:
                           </p>
                           <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-wrap gap-3">
+
                             {unit.services ? (
                               Array.isArray(unit.services) ? (
                                 unit.services.map((service, idx) => (
@@ -753,7 +801,7 @@ const PalliativeUnits = () => {
                                 ))
                               ) : typeof unit.services === "object" ? (
                                 // Handle case when services is a single object
-                                <span className="px-4 py-1 bg-[#E3F2FD] text-[#1976D2] rounded text-sm font-medium">
+                                <span className="px-4 py-1 bg-[#E3F2FD] text-[#1976D2] rounded- text-sm font-medium">
                                   {unit.services.service || "Unknown Service"}
                                 </span>
                               ) : (
@@ -766,6 +814,7 @@ const PalliativeUnits = () => {
                                 No services available
                               </span>
                             )}
+                            </div>
                           </div>
                         </div>
 
@@ -865,13 +914,41 @@ const PalliativeUnits = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Country <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  size="large"
-                  placeholder="e.g., India"
-                  value={formData.country}
-                  onChange={(e) => handleInputChange("country", e.target.value)}
-                  required
+                <ReactSelect
+                  options={countryOptions}
+                  value={selectedCountry}
+                  onChange={handleCountryChange}
                   className="w-full"
+                  classNamePrefix="select"
+                  placeholder="Select your country"
+                  isSearchable
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      height: "45px",
+                      minHeight: "40px",
+                      borderColor: "#d1d5db",
+                      "&:hover": {
+                        borderColor: "#9ca3af",
+                      },
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      height: "40px",
+                      padding: "0 8px",
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      margin: "0px",
+                    }),
+                    indicatorSeparator: () => ({
+                      display: "none",
+                    }),
+                    indicatorsContainer: (base) => ({
+                      ...base,
+                      height: "40px",
+                    }),
+                  }}
                 />
               </div>
 
@@ -882,6 +959,7 @@ const PalliativeUnits = () => {
                 </label>
 
                 <Select
+                  mode="multiple"
                   size="large"
                   placeholder="Select services"
                   value={formData.services}
@@ -905,7 +983,7 @@ const PalliativeUnits = () => {
               </div>
 
               {/* Contact Details */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Details <span className="text-red-500">*</span>
                 </label>
@@ -921,6 +999,39 @@ const PalliativeUnits = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Phone number or contact information
+                </p>
+              </div> */}
+              <div className=" flex flex-col gap-2 ">
+                <label className=" text-sm font-semibold">Phone number</label>
+                <PhoneInput
+                  inputStyle={{ width: "100%", height: "45px" }}
+                  country={"us"}
+                  value={formData.contactDetails}
+                  onChange={(value) =>
+                    handleInputChange("contactDetails", value)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Do you want to make this palliative unit public?
+                </label>
+                <div className="flex items-center gap-4">
+                  <Checkbox
+                    checked={formData.actionStatus === true}
+                    onChange={(e) =>
+                      handleInputChange("actionStatus", e.target.checked)
+                    }
+                  >
+                    <span className="text-sm text-gray-700">
+                      Yes, make this unit publicly visible
+                    </span>
+                  </Checkbox>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {formData.actionStatus
+                    ? "This unit will be visible to all users in the directory."
+                    : "This unit will be private and only visible to authorized users."}
                 </p>
               </div>
             </div>
@@ -942,6 +1053,8 @@ const PalliativeUnits = () => {
                   !formData.state ||
                   !formData.country ||
                   !formData.services ||
+                  !Array.isArray(formData.services) ||
+                  formData.services.length === 0 ||
                   !formData.contactDetails
                 }
                 className="px-6 py-2.5 bg-[#00A99D] text-white rounded-lg hover:bg-[#008F84] transition-colors duration-150 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

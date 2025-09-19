@@ -95,11 +95,128 @@ export const fetchThreads = async () => {
 };
 
 /**
- * Create a new thread
+ * Compress an image file to reduce size
+ * @param {File} imageFile - The image file to compress
+ * @param {number} maxWidth - Maximum width for the compressed image
+ * @param {number} maxHeight - Maximum height for the compressed image
+ * @param {number} quality - Compression quality (0-1)
+ * @returns {Promise<File>} Compressed image file
+ */
+const compressImage = (
+  imageFile,
+  maxWidth = 1920,
+  maxHeight = 1080,
+  quality = 0.8
+) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      // Calculate new dimensions while maintaining aspect ratio
+      let { width, height } = img;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw and compress
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          const compressedFile = new File([blob], imageFile.name, {
+            type: imageFile.type,
+            lastModified: Date.now(),
+          });
+          resolve(compressedFile);
+        },
+        imageFile.type,
+        quality
+      );
+    };
+
+    img.src = URL.createObjectURL(imageFile);
+  });
+};
+
+/**
+ * Process files for upload - compress images if needed
+ * @param {File[]} files - Array of files to process
+ * @param {Function} onProgress - Progress callback
+ * @returns {Promise<File[]>} Processed files
+ */
+const processFilesForUpload = async (files, onProgress) => {
+  const processedFiles = [];
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit per file
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    let processedFile = file;
+
+    try {
+      // Compress images if they're too large
+      if (file.type.startsWith("image/") && file.size > MAX_FILE_SIZE) {
+        console.log(
+          `Compressing image: ${file.name} (${(file.size / 1024 / 1024).toFixed(
+            2
+          )}MB)`
+        );
+        processedFile = await compressImage(file, 1920, 1080, 0.7);
+        console.log(
+          `Compressed to: ${(processedFile.size / 1024 / 1024).toFixed(2)}MB`
+        );
+      }
+
+      // For non-image files, check if they exceed reasonable limits
+      if (!file.type.startsWith("image/") && file.size > 25 * 1024 * 1024) {
+        // 25MB for documents
+        console.warn(
+          `File ${file.name} is very large (${(file.size / 1024 / 1024).toFixed(
+            2
+          )}MB) and may cause upload issues`
+        );
+      }
+
+      processedFiles.push(processedFile);
+
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total: files.length,
+          fileName: file.name,
+          processed: processedFile !== file,
+        });
+      }
+    } catch (error) {
+      console.error(`Error processing file ${file.name}:`, error);
+      // Use original file if processing fails
+      processedFiles.push(file);
+    }
+  }
+
+  return processedFiles;
+};
+
+/**
+ * Create a new thread with enhanced error handling and file processing
  * @param {Object} threadData - Thread data including title, content, authorId, tags, and optional file
+ * @param {Function} onProgress - Progress callback for file processing
  * @returns {Promise<Object>} Response with created thread data or error
  */
-export const createThread = async (threadData) => {
+export const createThread = async (threadData, onProgress) => {
   // Validate required fields
   const validation = validateFields(threadData, [
     "title",
@@ -115,79 +232,180 @@ export const createThread = async (threadData) => {
     };
   }
 
-  // console.log("Thread Data:", threadData);
-
   try {
-    // Handle file upload if present
-    let formData;
-    if (
-      threadData.file &&
-      Array.isArray(threadData.file) &&
-      threadData.file.length > 0
-    ) {
-      formData = new FormData();
-      Object.entries(threadData).forEach(([key, value]) => {
-        if (key === "file") {
-          // Handle multiple files - append each file with the same "file" key
-          value.forEach((file, index) => {
-            formData.append(`file`, file);
-          });
-        } else if (key === "tags") {
-          // Ensure tags are always sent as a clean JSON array
-          const tagsArray = Array.isArray(value) ? value : [value];
-          formData.append("tags", JSON.stringify(tagsArray));
-          console.log("Formatted Tags:", JSON.stringify(tagsArray));
-          console.log(typeof tagsArray);
-        } else {
-          formData.append(key, value);
-        }
-      });
-    } else if (threadData.file && !Array.isArray(threadData.file)) {
-      // Handle single file for backward compatibility
-      formData = new FormData();
-      Object.entries(threadData).forEach(([key, value]) => {
-        if (key === "file") {
-          formData.append("file", value);
-        } else if (key === "tags") {
-          // Ensure tags are always sent as a clean JSON array
-          const tagsArray = Array.isArray(value) ? value : [value];
-          formData.append("tags", JSON.stringify(tagsArray));
-          console.log("Formatted Tags:", JSON.stringify(tagsArray));
-          console.log(typeof tagsArray);
-        } else {
-          formData.append(key, value);
-        }
-      });
-    }
+    let requestData;
+    let config = {};
 
-    // Ensure tags are properly formatted in the request body when not using FormData
-    let requestData = formData;
-    if (!formData) {
-      // If not using FormData, ensure tags are properly formatted in the request body
+    // Handle file upload if present
+    if (
+      (threadData.file &&
+        Array.isArray(threadData.file) &&
+        threadData.file.length > 0) ||
+      (threadData.file && !Array.isArray(threadData.file))
+    ) {
+      // Pre-upload size check to prevent 413 errors
+      const uploadFiles = Array.isArray(threadData.file)
+        ? threadData.file
+        : [threadData.file];
+
+      const totalSize = uploadFiles.reduce((sum, file) => sum + file.size, 0);
+      const totalSizeMB = totalSize / (1024 * 1024);
+
+      // If total size is very large, return early with helpful message
+      if (totalSize > 100 * 1024 * 1024) {
+        // 100MB limit
+        return {
+          success: false,
+          error: `Upload too large (${totalSizeMB.toFixed(
+            1
+          )}MB). Please upload smaller files or fewer files at once.`,
+          status: 413,
+          timestamp: new Date().toISOString(),
+          details: {
+            totalSizeMB: totalSizeMB.toFixed(1),
+            fileCount: uploadFiles.length,
+            suggestions: [
+              "Upload files one by one instead of all together",
+              "Compress large images before uploading",
+              "Use files smaller than 10MB each",
+              "Try uploading only 2-3 files at a time",
+            ],
+          },
+        };
+      }
+
+      // Process files (compress images, validate sizes)
+      const processedFiles = await processFilesForUpload(
+        uploadFiles,
+        onProgress
+      );
+
+      // Create FormData
+      const formData = new FormData();
+
+      // Add basic fields
+      formData.append("title", threadData.title);
+      formData.append("content", threadData.content);
+      formData.append("authorId", threadData.authorId);
+
+      // Add tags as JSON string
+      const tagsArray = Array.isArray(threadData.tags)
+        ? threadData.tags
+        : threadData.tags
+        ? [threadData.tags]
+        : [];
+      formData.append("tags", JSON.stringify(tagsArray));
+
+      // Add processed files
+      processedFiles.forEach((file) => {
+        formData.append("file", file);
+      });
+
+      requestData = formData;
+
+      // Don't set Content-Type header - let the browser set it with boundary
+      config = {
+        timeout: 120000, // 2 minutes timeout for large files
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      };
+    } else {
+      // No files - send as JSON
       requestData = {
         ...threadData,
         tags: Array.isArray(threadData.tags)
           ? threadData.tags
-          : [threadData.tags],
+          : threadData.tags
+          ? [threadData.tags]
+          : [],
       };
     }
 
-    const response = await Api.post(
-      forumRoutes.addThread,
-      requestData,
-      formData
-        ? {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        : {}
-    );
-
-    console.log(response.data);
-
+    const response = await Api.post(forumRoutes.addThread, requestData, config);
     return formatResponse(response);
   } catch (error) {
+    console.log("Upload error details:", {
+      code: error.code,
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+    });
+
+    // Enhanced error handling for different scenarios
+    if (error.code === "ECONNABORTED") {
+      return {
+        success: false,
+        error:
+          "Upload timeout. Please try with smaller files or check your internet connection.",
+        status: 408,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Check for 413 error in multiple ways as different servers/proxies handle it differently
+    if (
+      error.response?.status === 413 ||
+      error.message?.includes("413") ||
+      error.message?.toLowerCase().includes("request entity too large") ||
+      error.message?.toLowerCase().includes("payload too large") ||
+      (error.code === "ERR_BAD_REQUEST" && error.message?.includes("413"))
+    ) {
+      return {
+        success: false,
+        error: "Uploaded files are too large. Try uploading smaller ones.",
+        status: 413,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    if (error.response?.status === 507) {
+      return {
+        success: false,
+        error:
+          "Server storage is full. Please try again later or contact support.",
+        status: 507,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    if (error.response?.status === 415) {
+      return {
+        success: false,
+        error:
+          "One or more files have an unsupported format. Please check file types.",
+        status: 415,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Network errors - but check if it might be a 413 error first
+    if (!error.response) {
+      // Sometimes 413 errors come through as network errors without a proper response
+      // Check the error message for clues
+      if (
+        error.message?.includes("413") ||
+        error.message?.toLowerCase().includes("request entity too large") ||
+        error.message?.toLowerCase().includes("payload too large") ||
+        error.message?.toLowerCase().includes("too large")
+      ) {
+        return {
+          success: false,
+          error: "Uploaded files are too large. Try uploading smaller ones.",
+          status: 413,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      return {
+        success: false,
+        error:
+          "Network error. Please check your internet connection and try again.",
+        status: 0,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     return formatError(error, "create thread");
   }
 };
